@@ -1,5 +1,4 @@
 require 'thread'
-require 'set'
 
 module Zg
   class Context
@@ -27,24 +26,23 @@ module Zg
     end
 
     attr_reader :scheduler
-    attr_reader :pending_sources
 
     def initialize
       @scheduler = Scheduler.new
-      @pending_sources = Set.new
+      @pending = {}
     end
 
     def finalize
 
     end
 
+    def enumerator(enum)
+      Context::Enumerator.new(self, enum)
+    end
+
     def defer(source, id)
       pending_sources.add(source)
       Proxy.new(self) { wait(source, id) }
-    end
-
-    def enumerator(enum)
-      Context::Enumerator.new(self, enum)
     end
 
     def wait(source, id=nil)

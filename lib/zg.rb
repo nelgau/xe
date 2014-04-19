@@ -2,6 +2,7 @@ require 'zg/version'
 require 'zg/context'
 require 'zg/enumerator'
 require 'zg/realizer'
+require 'fiber'
 
 module Zg
   def self.context(&b)

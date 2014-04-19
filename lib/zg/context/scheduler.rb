@@ -1,18 +1,13 @@
 module Zg
   class Context
+
     class Scheduler
+      attr_reader :root_fiber
       attr_reader :waiters
 
       def initialize
+        @root_fiber = Fiber.current
         @waiters = {}
-      end
-
-      def sources
-        waiters.keys
-      end
-
-      def ids_for_source(source)
-
       end
 
       def wait(source, id)
@@ -22,14 +17,13 @@ module Zg
         Fiber.yield
       end
 
-      def dispatch_many(source, id_value_map)
+      def dispatch(source, id, value)
         return unless (id_map = waiters[source])
-        id_value_map.each do |id, value|
-          next unless (fibers = id_map.delete(id))
-          fibers.each { |f| f.resume(value) }
-        end
+        return unless (fibers = id_map.delete(id))
+        waiters.delete(source) if id_map.empty?
+        fibers.each { |f| f.resume(value) }
       end
-
     end
+
   end
 end
