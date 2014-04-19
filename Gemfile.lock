@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    collude (0.0.1)
+    zg (0.0.1)
 
 GEM
   remote: https://rubygems.org/
@@ -45,7 +45,7 @@ PLATFORMS
 
 DEPENDENCIES
   active_model_serializers
-  collude!
+  zg!
   rspec (~> 2.13.0)
   rspec-instafail (~> 0.2)
   simplecov (= 0.7.1)

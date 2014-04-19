@@ -5,4 +5,4 @@ end
 
 require 'active_model'
 require 'active_model_serializers'
-require 'collude'
+require 'zg'

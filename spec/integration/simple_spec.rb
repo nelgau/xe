@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Collude - Simple Usage" do
+describe "Zg - Simple Usage" do
 
   class MyClass
     attr_reader :id
@@ -14,7 +14,7 @@ describe "Collude - Simple Usage" do
     end
   end
 
-  class VerifiedRealizer < Collude::Realizer
+  class VerifiedRealizer < Zg::Realizer
     def self.realize(ids)
       ids.map { |id| "verified #{id}" }
     end
@@ -36,7 +36,7 @@ describe "Collude - Simple Usage" do
   it "works" do
     a = (0...10).map { MyClass.new }
 
-    result = Collude.context do |c|
+    result = Zg.context do |c|
       c.enumerator(a).map do |o|
         puts "A"
         MySerializer.new(o).as_json

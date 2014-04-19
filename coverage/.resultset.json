@@ -1,7 +1,7 @@
 {
   "RSpec": {
     "coverage": {
-      "/Users/nelgau/Code/airbnb/collude/lib/collude.rb": [
+      "/Users/nelgau/Code/airbnb/zg/lib/zg.rb": [
         1,
         1,
         1,
@@ -16,7 +16,7 @@
         null,
         null
       ],
-      "/Users/nelgau/Code/airbnb/collude/lib/collude/context.rb": [
+      "/Users/nelgau/Code/airbnb/zg/lib/zg/context.rb": [
         1,
         null,
         1,
@@ -60,7 +60,7 @@
         null,
         null
       ],
-      "/Users/nelgau/Code/airbnb/collude/lib/collude/context/enumerator.rb": [
+      "/Users/nelgau/Code/airbnb/zg/lib/zg/context/enumerator.rb": [
         1,
         1,
         1,
@@ -83,7 +83,7 @@
         null,
         null
       ],
-      "/Users/nelgau/Code/airbnb/collude/lib/collude/realizer.rb": [
+      "/Users/nelgau/Code/airbnb/zg/lib/zg/realizer.rb": [
         1,
         null,
         1,
@@ -99,7 +99,7 @@
         null,
         null
       ],
-      "/Users/nelgau/Code/airbnb/collude/lib/collude/realizer/proxy.rb": [
+      "/Users/nelgau/Code/airbnb/zg/lib/zg/realizer/proxy.rb": [
         1,
         1,
         1,
