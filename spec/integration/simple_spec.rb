@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Zg - Simple Usage" do
+describe "Xe - Simple Usage" do
 
   class MyClass
     attr_reader :id
@@ -14,7 +14,7 @@ describe "Zg - Simple Usage" do
     end
   end
 
-  class VerifiedRealizer < Zg::Realizer
+  class VerifiedRealizer < Xe::Realizer
     def self.realize(ids)
       ids.map { |id| "verified #{id}" }
     end
@@ -36,7 +36,7 @@ describe "Zg - Simple Usage" do
   it "works" do
     a = (0...10).map { MyClass.new }
 
-    result = Zg.context do |c|
+    result = Xe.context do |c|
       c.enumerator(a).map do |o|
         puts "A"
         MySerializer.new(o).as_json

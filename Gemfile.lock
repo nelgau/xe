@@ -1,27 +1,12 @@
 PATH
   remote: .
   specs:
-    zg (0.0.1)
+    xe (0.0.1)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    active_model_serializers (0.8.1)
-      activemodel (>= 3.0)
-    activemodel (4.1.0)
-      activesupport (= 4.1.0)
-      builder (~> 3.1)
-    activesupport (4.1.0)
-      i18n (~> 0.6, >= 0.6.9)
-      json (~> 1.7, >= 1.7.7)
-      minitest (~> 5.1)
-      thread_safe (~> 0.1)
-      tzinfo (~> 1.1)
-    builder (3.2.2)
     diff-lcs (1.2.5)
-    i18n (0.6.9)
-    json (1.8.1)
-    minitest (5.3.3)
     multi_json (1.9.2)
     rspec (2.13.0)
       rspec-core (~> 2.13.0)
@@ -36,16 +21,12 @@ GEM
       multi_json (~> 1.0)
       simplecov-html (~> 0.7.1)
     simplecov-html (0.7.1)
-    thread_safe (0.3.3)
-    tzinfo (1.1.0)
-      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  active_model_serializers
-  zg!
   rspec (~> 2.13.0)
   rspec-instafail (~> 0.2)
   simplecov (= 0.7.1)
+  xe!
