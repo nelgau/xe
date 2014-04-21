@@ -1,7 +1,6 @@
 module Xe
   class Enumerator
     module Impl
-
       class Base
         attr_reader :context
         attr_reader :enum
@@ -49,7 +48,6 @@ module Xe
           context.fiber(&blk).tap(&:resume)
         end
       end
-
     end
   end
 end

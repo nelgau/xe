@@ -1,7 +1,6 @@
 module Xe
   class Enumerator
     module Impl
-
       class Map
         def map(&blk)
           map_with_index do |obj, index|
@@ -9,7 +8,6 @@ module Xe
           end
         end
       end
-
     end
   end
 end

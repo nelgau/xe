@@ -5,7 +5,6 @@ require 'xe/enumerator/impl/map'
 
 module Xe
   class Enumerator
-
     module Impl
       def self.new(method, context, enum)
         class_for_method(method).new(context, enum)
@@ -19,6 +18,5 @@ module Xe
         end
       end
     end
-
   end
 end

@@ -6,8 +6,6 @@ require 'thread'
 
 module Xe
   class Context
-    extend Forwardable
-
     def self.current
       Thread.current[:xe]
     end

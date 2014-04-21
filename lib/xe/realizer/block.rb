@@ -8,8 +8,6 @@ module Xe
       def call(key, group)
         @call_blk.call(key, group)
       end
-
-
     end
   end
 end

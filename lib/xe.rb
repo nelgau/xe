@@ -9,10 +9,6 @@ module Xe
     Context.wrap(&b)
   end
 
-  def self.each(e, &b)
-    context { |c| c.enum(e).each(&b) }
-  end
-
   def self.map(e, &b)
     context { |c| c.enum(e).map(&b) }
   end

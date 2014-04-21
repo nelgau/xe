@@ -1,6 +1,5 @@
 module Xe
   class Context
-
     class Scheduler
       attr_reader :waiting
 
@@ -38,6 +37,5 @@ module Xe
         fiber.is_a?(Context::Fiber)
       end
     end
-
   end
 end

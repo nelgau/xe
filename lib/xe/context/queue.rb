@@ -1,12 +1,22 @@
 module Xe
   class Context
     class Queue
+      include Enumerable
+
       attr_reader :queued
 
       def initialize(&did_realize)
         @did_realize = did_realize
         # Map of [realizer, group key] => group.
         @queued = {}
+      end
+
+      def each(&blk)
+        queued.each(&blk)
+      end
+
+      def empty?
+        queued.empty?
       end
 
       def add(realizer, id)

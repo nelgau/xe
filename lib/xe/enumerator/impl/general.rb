@@ -1,7 +1,6 @@
 module Xe
   class Enumerator
     module Impl
-
       class General
         include Enumerable
 
@@ -18,7 +17,6 @@ module Xe
           EOS
         end
       end
-
     end
   end
 end

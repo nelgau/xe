@@ -1,6 +1,5 @@
 module Xe
   class Context
-
     class Fiber
       attr_reader :context
 
@@ -9,6 +8,5 @@ module Xe
         @context = context
       end
     end
-
   end
 end
