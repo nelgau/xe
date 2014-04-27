@@ -10,7 +10,7 @@ module Xe
 
       # Returns a proxy for the realized value.
       def [](id)
-        context = Xe::Context.current
+        context = Context.current
         context ? context.defer(self, id) : load_id(id)
       end
 
@@ -34,16 +34,24 @@ module Xe
         Set.new
       end
 
+      def inspect
+        "#<#{self.class.name}>"
+      end
+
+      def to_s
+        inspect
+      end
+
       private
 
       # This method exists purely to support the case in which a realizer is
       # called outside of a context. This is unlikely to ever be the case in
       # production code but we still support it.
       def load_id(id)
-        group_key = group_key_for_id(id)
-        group = new_group(group_key)
+        key = group_key_for_id(id)
+        group = new_group(key)
         group << id
-        self.call(group_key, group)[id]
+        call(key, group)[id]
       end
     end
   end

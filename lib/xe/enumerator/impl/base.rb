@@ -10,6 +10,16 @@ module Xe
           @enum = enum
         end
 
+        def inspect
+          # Shorten the length of the class name to improve readability.
+          last_const_name = self.class.name.split('::').last
+          "#<Enum/#{last_const_name}>"
+        end
+
+        def to_s
+          inspect
+        end
+
         protected
 
         def run(index=nil, &blk)
@@ -17,7 +27,7 @@ module Xe
           result = nil
           fiber = run_in_fiber do
             result = blk.call
-            context.dispatch([self, index], result)
+            context.dispatch(self, index, result)
           end
 
           # The fiber terminated. Return the result as a value.
@@ -27,8 +37,8 @@ module Xe
           context.proxy(self, index) do
             # The proxy was realized in an unmanaged fiber so we can't wait for
             # the value to be available. We must finalize the context. This
-            # necessarily releases all fibers (or deadlocks) so the result
-            # must be available when this operation completes.
+            # necessarily releases all fibers (or deadlocks) so, assuming the
+            # operation succeeds the result must be available.
             context.finalize
             result
           end

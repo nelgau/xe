@@ -1,7 +1,7 @@
 module Xe
   class Enumerator
     module Impl
-      class General
+      class General < Base
         include Enumerable
 
         def each(&blk)

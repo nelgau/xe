@@ -1,38 +1,24 @@
-require 'xe/context/fiber'
-require 'xe/context/scheduler'
+require 'xe/context/current'
+require 'xe/context/manager'
 require 'xe/context/queue'
-require 'xe/context/cache'
-require 'thread'
+require 'xe/context/private'
 
 module Xe
   class Context
-    def self.current
-      Thread.current[:xe]
-    end
+    extend Current
+    include Private
 
-    def self.wrap
+    def self.wrap(options={}, &blk)
       # If we already have a context, yield it.
       return yield current if current
       # Otherwise, create a new context.
       begin
-        Thread.current[:xe] = new
-        yield current
-      ensure
+        self.current = self.new(options)
+        result = blk.call(current)
         current.finalize
-        Thread.current[:xe] = nil
-      end
-    end
-
-    attr_reader :scheduler
-    attr_reader :queue
-    attr_reader :cache
-
-    def initialize
-      @scheduler = Scheduler.new
-      @cache = Cache.new
-
-      @queue = Queue.new do |realizer, id, value|
-        dispatch(realizer, id, value)
+        result
+      ensure
+        clear_current
       end
     end
 
@@ -41,43 +27,36 @@ module Xe
     end
 
     def defer(realizer, id)
-      is_cached, cached_value = cache.get(realizer, id)
-      return cached_value if is_cached
+      key = [realizer, id]
+      if cache.has_key?(key)
+        log(:value_cached, realizer, id)
+        return cache[key]
+      end
 
+      log(:value_deferred, realizer, id)
       queue.add(realizer, id)
-      proxy do
+      proxy(realizer, id) do
+        log(:value_realized, realizer, id)
         queue.realize(realizer, id)
       end
     end
 
-    # This iteratively resolves all outstanding deferral, releasing all fibers,
-    # and detects deadlock.
+    # This iteratively resolves all outstanding deferred values, eventually
+    # releasing all fibers or detecting deadlock.
     def finalize
+      log(:finalize_start)
       # Realize all outstanding deferrals
-      queue.flush until queue.empty?
-      # If fibers are still waiting but there are no deferrals in the queue
-      # that might unblock them, the there are no moves left in the game and
-      # we have deadlocked.
-      raise DeadlockError if scheduler.waiters?
-    end
-
-    # @private
-    def proxy(source, id, &blk)
-      Proxy.new(self) do
-        scheduler.wait([source, id], &blk)
+      until queue.empty?
+        log(:finalize_step, queue.group_count, queue.item_count)
+        queue.flush
       end
-    end
-
-    # @private
-    def fiber(&blk)
-      scheduler.fiber(&blk)
-    end
-
-    private
-
-    def dispatch(realizer, id, value)
-      cache.set(realizer, id, value)
-      scheduler.dispatch([realizer, id], value)
+      # If fibers are still waiting but there are no deferred values in the
+      # queue that might unblock them, there are no moves left in the game
+      # and we have surely deadlocked.
+      if manager.waiters?
+        log(:finalize_deadlock)
+        raise DeadlockError
+      end
     end
   end
 end

@@ -1,26 +1,30 @@
 module Xe
   class Proxy < BasicObject
-    def initialize(context, &value_block)
-      @__context = context
-      @__value_block = value_block
-      @__has_value = false
+    attr_reader :__target
+
+    def initialize(&target_block)
+      @__target_block = target_block
+      @__has_target = false
     end
 
-    def __get_value
-      return if @__has_value
-      @__value = @__value_block.call(@__context)
-      @__has_value = true
+    def __target?
+      @__has_target
     end
 
-    def __has_value?
-      @__has_value
+    def __set_target(target)
+      @__target = target
+      @__has_target = true
+      # Allow the garbage collector to reclaim the block's scope.
+      @__target_block = nil
     end
 
-    protected
+    def __resolve_target
+      __set_target(@__target_block.call)
+    end
 
-    def method_missing(method, *args, &block)
-      __get_value
-      @__value.__send__(method, *args, &block)
+    def method_missing(method, *args, &blk)
+      __resolve_target unless __target?
+      @__target.__send__(method, *args, &blk)
     end
   end
 end

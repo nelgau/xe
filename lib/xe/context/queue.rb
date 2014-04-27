@@ -41,6 +41,14 @@ module Xe
         end
       end
 
+      def group_count
+        @queued.count
+      end
+
+      def item_count
+        @queued.values.map(&:count).reduce(0, &:+)
+      end
+
       private
 
       def realize_group(realizer, group_key, group)

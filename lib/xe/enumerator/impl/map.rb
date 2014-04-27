@@ -1,7 +1,7 @@
 module Xe
   class Enumerator
     module Impl
-      class Map
+      class Map < Base
         def map(&blk)
           map_with_index do |obj, index|
             run(index) { blk.call(obj) }
