@@ -1,6 +1,5 @@
 require 'xe/context/current'
 require 'xe/context/scheduler'
-require 'xe/context/loom'
 
 module Xe
   class Context
@@ -30,7 +29,7 @@ module Xe
       @policy = options[:policy] || Policy::Default.new
       @logger = logger_from_option(options[:logger])
       @scheduler = Scheduler.new(@policy)
-      @loom = Loom.new
+      @loom = Loom::Transfer.new
       @proxies = {}
       @cache = {}
     end
@@ -96,7 +95,7 @@ module Xe
     # @protected
     def fiber(&blk)
       log(:fiber_new)
-      loom.fiber(&blk)
+      loom.new_fiber(&blk)
     end
 
     private
@@ -118,7 +117,7 @@ module Xe
 
     def wait(target, &blk)
       log(:fiber_wait, target)
-      scheduler.wait(target)
+      scheduler.wait(target, loom.depth)
       loom.wait(target, &blk)
     end
 

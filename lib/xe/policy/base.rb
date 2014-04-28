@@ -13,8 +13,9 @@ module Xe
       # collection that backs the realizer's group, this may or may not
       # increase the cardinality of the event's group.
       def update_event(event); end
-      # A fiber is blocked waiting on the realization of this event.
-      def wait_event(event); end
+      # A fiber is blocked waiting on the realization of this event. The depth
+      # of the fiber is given as the second argument.
+      def wait_event(event, depth); end
 
       # Override to return an event key which should be realized immediately.
       # If nil is returned, the scheduler will make an arbitrary choice.

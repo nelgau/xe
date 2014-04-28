@@ -10,18 +10,18 @@ module Xe
       end
 
       def current
-        all_contexts[thread_key]
+        all_contexts[current_thread_key]
       end
 
       def current=(context)
-        all_contexts[thread_key] = context
+        all_contexts[current_thread_key] = context
       end
 
       def clear_current
-        all_contexts.delete(thread_key)
+        all_contexts.delete(current_thread_key)
       end
 
-      def thread_key
+      def current_thread_key
         Thread.current.object_id
       end
     end

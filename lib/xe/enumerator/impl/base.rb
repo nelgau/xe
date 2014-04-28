@@ -59,7 +59,7 @@ module Xe
         private
 
         def run_in_fiber(&blk)
-          context.fiber(&blk).tap(&:resume)
+          context.fiber(&blk).tap(&:run)
         end
       end
     end

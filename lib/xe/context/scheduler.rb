@@ -15,17 +15,20 @@ module Xe
         policy.update_event(event)
       end
 
-      def wait(target)
+      def wait(target, depth)
         key = Event.target_key(target)
         event = events[key]
-        policy.wait_event(event) if event
+        policy.wait_event(event, depth) if event
       end
 
       # Pops and returns an event, or nil.
       def next_event
-        # Give the policy the oportunity to select the event.
+        # Give the policy the oportunity to select the event. If the policy
+        # defers the decision (by returning nil), select the first event in the
+        # hash. Thanks to Ruby's ordered hashes this will also have the
+        # property of consuming the events in the order they were added.
         key   = policy.next_event_key
-        key ||= events.keys.first
+        key ||= events.each_key.first
         consume_event(key)
       end
 
