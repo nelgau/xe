@@ -1,12 +1,10 @@
 require 'xe/context/current'
-require 'xe/context/manager'
-require 'xe/context/queue'
-require 'xe/context/private'
+require 'xe/context/scheduler'
+require 'xe/context/loom'
 
 module Xe
   class Context
     extend Current
-    include Private
 
     def self.wrap(options={}, &blk)
       # If we already have a context, yield it.
@@ -22,23 +20,38 @@ module Xe
       end
     end
 
-    def enum(enumerable)
-      Enumerator.new(self, enumerable)
+    attr_reader :scheduler
+    attr_reader :loom
+    attr_reader :proxies
+    attr_reader :cache
+    attr_reader :logger
+
+    def initialize(options={})
+      @policy = options[:policy] || Policy::Default.new
+      @logger = logger_from_option(options[:logger])
+      @scheduler = Scheduler.new(@policy)
+      @loom = Loom.new
+      @proxies = {}
+      @cache = {}
+    end
+
+    def enum(e, options={})
+      Enumerator.new(self, e, options)
     end
 
     def defer(realizer, id)
-      key = [realizer, id]
-      if cache.has_key?(key)
-        log(:value_cached, realizer, id)
-        return cache[key]
+      id = Proxy.resolve(id)
+      group_key = realizer.group_key_for_id(id)
+      target = new_target(realizer, id, group_key)
+
+      if cache.has_key?(target)
+        log(:value_cached, target)
+        return cache[target]
       end
 
-      log(:value_deferred, realizer, id)
-      queue.add(realizer, id)
-      proxy(realizer, id) do
-        log(:value_realized, realizer, id)
-        queue.realize(realizer, id)
-      end
+      log(:value_deferred, target)
+      scheduler.add(target)
+      proxy(target) { realize_target(target) }
     end
 
     # This iteratively resolves all outstanding deferred values, eventually
@@ -46,17 +59,89 @@ module Xe
     def finalize
       log(:finalize_start)
       # Realize all outstanding deferrals
-      until queue.empty?
-        log(:finalize_step, queue.group_count, queue.item_count)
-        queue.flush
+      until scheduler.empty?
+        event = scheduler.next_event
+        log(:finalize_step, event)
+        realize_event(event)
       end
       # If fibers are still waiting but there are no deferred values in the
       # queue that might unblock them, there are no moves left in the game
       # and we have surely deadlocked.
-      if manager.waiters?
+      if loom.waiters?
         log(:finalize_deadlock)
         raise DeadlockError
       end
+    end
+
+    # @protected
+    def new_target(source, id, group_key=nil)
+      Target.new(source, id, group_key)
+    end
+
+    # @protected
+    def dispatch(target, value)
+      log(:value_dispatched, target)
+      resolve(target, value)
+      release(target, value)
+    end
+
+    # @protected
+    def proxy(target, &blk)
+      log(:proxy_new, target)
+      proxy = Proxy.new { wait(target, &blk) }
+      (proxies[target] ||= []) << proxy
+      proxy
+    end
+
+    # @protected
+    def fiber(&blk)
+      log(:fiber_new)
+      loom.fiber(&blk)
+    end
+
+    private
+
+    def realize_target(target)
+      log(:value_forced, target)
+      event = scheduler.pop_event(target)
+      realize_event(event)[target.id]
+    end
+
+    def realize_event(event)
+      log(:event_realize, event)
+      event.realize do |target, value|
+        log(:value_realized, target)
+        cache[target] = value
+        dispatch(target, value)
+      end
+    end
+
+    def wait(target, &blk)
+      log(:fiber_wait, target)
+      scheduler.wait(target)
+      loom.wait(target, &blk)
+    end
+
+    def release(target, value, &blk)
+      count = loom.waiter_count(target)
+      log(:fiber_release, target, count)
+      loom.release(target, value)
+    end
+
+    def resolve(target, value)
+      target_proxies = proxies.delete(target)
+      log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
+      return unless target_proxies
+      target_proxies.each { |p| p.__set_subject(value) }
+    end
+
+    def logger_from_option(option)
+      logger   = option == :stdout ? Logger::Text.new : option
+      logger ||= Xe.default_logger
+    end
+
+    def log(*args)
+      @logger.call(*args) if @logger
     end
   end
 end

@@ -1,10 +1,10 @@
 module Xe
   module Realizer
     class Block < Base
-      attr_reader :name
+      attr_reader :tag
 
-      def initialize(name=nil, &call_blk)
-        @name = name || '...'
+      def initialize(tag=nil, &call_blk)
+        @tag = tag
         @call_blk = call_blk
       end
 
@@ -13,7 +13,7 @@ module Xe
       end
 
       def inspect
-        "#<#{self.class.name}(#{name})>"
+        "#<#{self.class.name}#{tag && "(#{tag})"}>"
       end
     end
   end

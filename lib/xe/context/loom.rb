@@ -1,17 +1,19 @@
 module Xe
   class Context
-    class Manager
+    class Loom
       attr_reader :waiters
 
       def initialize
         @waiters = {}
       end
 
+      # Creates a new managed fiber.
       def fiber(&blk)
         Xe::Fiber.new(&blk)
       end
 
-      def fiber?(fiber)
+      # Returns true if the fiber is managed.
+      def managed_fiber?(fiber)
         fiber.is_a?(Xe::Fiber)
       end
 
@@ -19,7 +21,7 @@ module Xe
       # If no managed fiber is available, it returns the value of the block.
       def wait(key, &blk)
         fiber = ::Fiber.current
-        if fiber?(fiber)
+        if managed_fiber?(fiber)
           (waiters[key] ||= []) << fiber
           ::Fiber.yield
         else
@@ -29,9 +31,8 @@ module Xe
 
       def release(key, value)
         fibers = waiters.delete(key)
-        return 0 unless fibers
+        return unless fibers
         fibers.each { |f| f.resume(value) }
-        fibers.count
       end
 
       def waiters?

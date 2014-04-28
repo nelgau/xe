@@ -25,7 +25,7 @@ module Xe
       # Override this method to specify keys with which to group ids.
       # Returns a key that will be used to group ids into batches.
       def group_key_for_id(id)
-        :default
+        nil
       end
 
       # Override this method to return a container for accumulating ids.

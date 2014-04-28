@@ -1,5 +1,6 @@
 require 'fiber'
 
 module Xe
-  class Fiber < ::Fiber; end
+  class Fiber < ::Fiber
+  end
 end
