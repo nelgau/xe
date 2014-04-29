@@ -32,7 +32,7 @@ module Xe
     def __set_subject(subject)
       @__subject = subject
       @__has_subject = true
-      # Allow the garbage collector to reclaim the block's scope.
+      # Allow the garbage collector to reclaim the block's captured scope.
       @__subject_block = nil
     end
 

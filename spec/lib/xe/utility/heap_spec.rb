@@ -21,6 +21,8 @@ describe Xe::Heap do
     end
   end
 
+  # Verify that the relationship between the heap nodes and the key-index map
+  # is consistent across mutating operation.
   def is_consistent?(heap)
     heap.each do |key, value|
       expect(heap[key]).to eq(value)

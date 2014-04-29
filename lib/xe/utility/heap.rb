@@ -104,7 +104,7 @@ module Xe
       swap_indexes(index, li)
       node = @nodes.pop
       @indexes.delete(node.key)
-      sift(index)
+      sift(index) if index < li
       node
     end
 
@@ -117,13 +117,6 @@ module Xe
       ci = index
       while ci > 0
         pi = (ci - 1) / 2
-
-        if !@nodes[ci] || !@nodes[pi]
-          puts "index: #{index} pi: #{pi} ci: #{ci}"
-          puts "no child" if !@nodes[ci]
-          puts "no parent" if !@node[pi]
-        end
-
         co, po = @nodes[ci].value, @nodes[pi].value
         break if @compare.call(po, co) > 0
         swap_indexes(pi, ci)

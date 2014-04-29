@@ -3,12 +3,26 @@ require 'set'
 module Xe
   module Policy
     class Heap < Base
-      # This is arbitrarily chosen to be a positive integer larger than any
-      # conceivable fiber depth. Ruby has no definitions for numerical bounds.
-      MAX_DEPTH = 2 ** 16
-
+      attr_reader :prioritization
       attr_reader :queue
       attr_reader :updated_keys
+
+      # Unless otherwise specified with the constructor, this class will use
+      # the following comparator to order events for realizaion.
+      DEFAULT_PRIORITIZATION = Proc.new do |ed1, ed2|
+        # Lowest depth is maximally interesting as it potentially unblocks
+        # larger wins that are nested deeply and diffusely.
+        cmp = ed2.min_depth <=> ed1.min_depth
+        next cmp if cmp != 0
+        # Otherwise, choose the smallest count. The rationale is that big
+        # groups are likely to become even bigger as the search proceeds,
+        # possibly allowing for very large batching gains at the end.
+        ed2.count <=> ed1.count
+      end
+
+      # This is arbitrarily chosen to be a positive integer larger than any
+      # conceivable fiber depth. Ruby has no definitions for numerical bounds.
+      MAX_DEPTH = 2 ** 24
 
       class EventData
         attr_reader :event
@@ -28,9 +42,9 @@ module Xe
         end
       end
 
-      def initialize(&compare)
-        @compare = compare || default_compare
-        @queue = Xe::Heap.new(&@compare)
+      def initialize(&prioritization)
+        @prioritization = prioritization || DEFAULT_PRIORITIZATION
+        @queue = Xe::Heap.new(&@prioritization)
         @updated_keys = Set.new
       end
 
@@ -66,19 +80,6 @@ module Xe
       end
 
       private
-
-      def default_compare
-        Proc.new do |e1, e2|
-          # Lowest depth is maximally interesting as it potentially unblocks
-          # larger wins that are nested more deeply.
-          cmp = e2.min_depth <=> e1.min_depth
-          next cmp if cmp != 0
-          # Otherwise, choose the smallest count. The rationale for this
-          # choice is that big groups are likely to become larger as the search
-          # proceeds, possibly allowing for bigger batching gains at the end.
-          e2.count <=> e1.count
-        end
-      end
 
       def flush_updates
         updated_keys.each { |k| queue.update(k) }

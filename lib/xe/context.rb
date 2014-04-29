@@ -6,6 +6,7 @@ module Xe
     extend Current
 
     def self.wrap(options={}, &blk)
+      return unless block_given?
       # If we already have a context, yield it.
       return yield current if current
       # Otherwise, create a new context.
@@ -19,15 +20,19 @@ module Xe
       end
     end
 
+    attr_reader :policy
+    attr_reader :logger
+
     attr_reader :scheduler
     attr_reader :loom
     attr_reader :proxies
     attr_reader :cache
-    attr_reader :logger
 
     def initialize(options={})
       @policy = options[:policy] || Policy::Default.new
       @logger = logger_from_option(options[:logger])
+      @disabled = options.fetch(:disabled, false)
+
       @scheduler = Scheduler.new(@policy)
       @loom = Loom::Yield.new
       @proxies = {}
@@ -72,6 +77,12 @@ module Xe
         log(:finalize_deadlock)
         raise DeadlockError
       end
+    end
+
+    # If the context is disabled, it will realize all values immediately,
+    # never create fibers or return proxies, etc, etc...
+    def disabled?
+      !!@disabled
     end
 
     # @protected

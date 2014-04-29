@@ -3,15 +3,20 @@ require 'set'
 module Xe
   module Realizer
     class Base
-      # Returns a proxy for the realized value.
+      # Returns a proxy for a realized value with the given id, creating a
+      # singleton instance of the realizer is none yet exists. As common
+      # realizer subclasses are likely to be fully stateless, this is the
+      # preferred shorthand for deferrals.
       def self.[](id)
         (@default ||= new)[id]
       end
 
-      # Returns a proxy for the realized value.
+      # Returns a proxy for a realized value with the given id.
       def [](id)
         context = Context.current
-        context ? context.defer(self, id) : load_id(id)
+        (context && !context.disabled?) ?
+          context.defer(self, id) :
+          load_id(id)
       end
 
       # Override these methods to implement a realizer.

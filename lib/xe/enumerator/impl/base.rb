@@ -25,6 +25,11 @@ module Xe
         protected
 
         def run(index=nil, &blk)
+          # If the context is disabled, return the evaluated block without
+          # deferring, proxying or any fiber-based enumeration.
+          return blk.call if context.disabled?
+
+          # Create a new target for this component of the enumeration.
           target = context.new_target(self, index)
 
           # Run the block inside of a fiber.
@@ -33,7 +38,6 @@ module Xe
             result = blk.call
             context.dispatch(target, result)
           end
-
           # The fiber terminated. Return the result as a value.
           return result if !fiber.alive?
 
