@@ -29,7 +29,7 @@ module Xe
       @policy = options[:policy] || Policy::Default.new
       @logger = logger_from_option(options[:logger])
       @scheduler = Scheduler.new(@policy)
-      @loom = Loom::Transfer.new
+      @loom = Loom::Yield.new
       @proxies = {}
       @cache = {}
     end
@@ -50,7 +50,9 @@ module Xe
 
       log(:value_deferred, target)
       scheduler.add(target)
-      proxy(target) { realize_target(target) }
+      proxy(target) do
+        realize_target(target)
+      end
     end
 
     # This iteratively resolves all outstanding deferred values, eventually

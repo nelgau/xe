@@ -5,9 +5,9 @@ module Xe
     # layer of cooperative concurrency. It explicitly transfers control between
     # fibers instead of using resume/yield.
     #
-    # *** NOTE: While this is correct for the most part, on Ruby 1.9.3-p448,
-    # the implementation segfaults when an exception is thrown from a fiber
-    # into which control has been transferred.
+    # *** NOTE: While this is apparently correct, the implementation segfaults
+    # on Ruby 1.9.3-p448 when an exception is thrown from a fiber into which
+    # control has been transferred.
     class Transfer < Base
       # Thrown when the current stack and control flow cannot be reconciled.
       # This should never occur under normal circumstances and indicates that
@@ -25,13 +25,6 @@ module Xe
         # calling fiber and we raise if an attempt is made to unwind from it.
         root_frame = Frame.new(Fiber.current, nil)
         @stack = [root_frame]
-      end
-
-      # Returns the depth of the current fiber as an integer.
-      def depth
-        # The root fiber has a depth of zero.
-        top_fiber = stack.last
-        managed_fiber?(top_fiber) ? top_fiber.depth : 0
       end
 
       # Creates a new managed fiber. As control may transfer from it without
@@ -88,6 +81,13 @@ module Xe
             waiter.waiting_fiber.transfer(value)
           end
         end
+      end
+
+      # Returns the depth of the current fiber as an integer.
+      def depth
+        # The root fiber has a depth of zero.
+        top_fiber = stack.last
+        managed_fiber?(top_fiber) ? top_fiber.depth : 0
       end
 
       private

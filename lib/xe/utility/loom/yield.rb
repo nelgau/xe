@@ -7,13 +7,6 @@ module Xe
     # designed to fail gracefully by forcing the immediate realization of any
     # values that are deferred within an unmanaged fiber.
     class Yield < Base
-      # Returns the depth of the current managed fiber, or zero if the current
-      # is the root or unmanaged.
-      def depth
-        current = Fiber.current
-        managed_fiber?(current) ? current.depth : 0
-      end
-
       # Yields from the current managed fiber and returns the result on resume.
       # If no managed fiber is available, it returns the value of the block.
       def wait(key, &blk)
@@ -36,6 +29,13 @@ module Xe
         pop_waiters(key) do |waiter|
           waiter.resume(value)
         end
+      end
+
+      # Returns the depth of the current managed fiber, or zero if the current
+      # is the root or unmanaged.
+      def depth
+        current = Fiber.current
+        managed_fiber?(current) ? current.depth : 0
       end
     end
   end

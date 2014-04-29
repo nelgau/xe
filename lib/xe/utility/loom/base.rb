@@ -13,24 +13,6 @@ module Xe
         @waiters = {}
       end
 
-      # Returns true if any fibers are presently suspended.
-      def waiters?
-        waiters.any?
-      end
-
-      # Returns the count of fibers suspended on the given key.
-      def waiter_count(key)
-        fibers = waiters[key]
-        fibers ? fibers.count : 0
-      end
-
-      # Returns the depth of the current fiber as an integer. The default
-      # implementation considers all fibers to be unnested and therefore
-      # at a depth of zero.
-      def depth
-        0
-      end
-
       # Creates a new managed fiber.
       def new_fiber(&blk)
         Xe::Fiber.new(self, depth + 1, &blk)
@@ -59,6 +41,24 @@ module Xe
       # because the base class doesn't suspend fibers.
       def release(key, value)
         return
+      end
+
+      # Returns true if any fibers are presently suspended.
+      def waiters?
+        waiters.any?
+      end
+
+      # Returns the count of fibers suspended on the given key.
+      def waiter_count(key)
+        fibers = waiters[key]
+        fibers ? fibers.count : 0
+      end
+
+      # Returns the depth of the current fiber as an integer. The default
+      # implementation considers all fibers to be unnested and therefore
+      # at a depth of zero.
+      def depth
+        0
       end
 
       protected
