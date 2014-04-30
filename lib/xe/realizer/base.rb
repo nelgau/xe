@@ -2,7 +2,7 @@ require 'set'
 
 module Xe
   module Realizer
-    class Base
+    class Base < Deferrable
       # Returns a proxy for a realized value with the given id, creating a
       # singleton instance of the realizer is none yet exists. As common
       # realizer subclasses are likely to be fully stateless, this is the
@@ -13,28 +13,39 @@ module Xe
 
       # Returns a proxy for a realized value with the given id.
       def [](id)
-        context = Context.current
-        (context && !context.disabled?) ?
-          context.defer(self, id) :
-          load_id(id)
+        # Block on the realization of the id. This enforces isolation between
+        # values (which can be proxied and lazily realized) and the manner
+        # by which they are referenced (ids, targets and events).
+        id = Proxy.resolve(id)
+        key = group_key_for_id(id)
+        # If an active context is available, defer the evaluation of this id.
+        # Otherwise, realize the value immediately.
+        Context.active? ?
+          Context.current.defer(self, id, key) :
+          call([id])[id]
       end
 
       # Override these methods to implement a realizer.
 
       # Override this method to provide a batch loader.
-      # Returns a map from group members to values.
-      def call(group_key, group)
+      # Returns a map from group members to values. The group argument may be
+      # of the type return by the #new_group method, or it may be an arbitrary
+      # object instance that conforms to the Enumerable interface. The latter
+      # would be the case when a client attempts to defer the realization of a
+      # value when no context exists.
+      def call(group)
         raise NotImplementedError
       end
 
-      # Override this method to specify keys with which to group ids.
+      # Override this method to specify a key by which to group this id. Each
+      # unique key will result in a unique group created by #new_group method.
       # Returns a key that will be used to group ids into batches.
       def group_key_for_id(id)
         nil
       end
 
       # Override this method to return a container for accumulating ids.
-      # Returns a new container than responds to :<<.
+      # Returns a new enumerable than responds to :<<.
       def new_group(key)
         Set.new
       end
@@ -45,18 +56,6 @@ module Xe
 
       def to_s
         inspect
-      end
-
-      private
-
-      # This method exists purely to support the case in which a realizer is
-      # called outside of a context. This is unlikely to ever be the case in
-      # production code but we still support it.
-      def load_id(id)
-        key = group_key_for_id(id)
-        group = new_group(key)
-        group << id
-        call(key, group)[id]
       end
     end
   end

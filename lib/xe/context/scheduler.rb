@@ -48,7 +48,7 @@ module Xe
       def create_event(target)
         key = Event.target_key(target)
         events[key] ||= begin
-          Event.for_target(target).tap do|event|
+          Event.from_target(target).tap do|event|
             policy.add_event(event)
           end
         end

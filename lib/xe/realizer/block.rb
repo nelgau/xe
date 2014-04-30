@@ -8,7 +8,7 @@ module Xe
         @call_blk = call_blk
       end
 
-      def call(key, group)
+      def call(group)
         @call_blk.call(group)
       end
 

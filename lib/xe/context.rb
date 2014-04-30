@@ -11,13 +11,21 @@ module Xe
       return yield current if current
       # Otherwise, create a new context.
       begin
-        self.current = self.new(options)
+        self.current = new(options)
         result = blk.call(current)
         current.finalize
         result
       ensure
         clear_current
       end
+    end
+
+    def self.exists?
+      !!current
+    end
+
+    def self.active?
+      exists? && !current.disabled?
     end
 
     attr_reader :policy
@@ -41,23 +49,6 @@ module Xe
 
     def enum(e, options={})
       Enumerator.new(self, e, options)
-    end
-
-    def defer(realizer, id)
-      id = Proxy.resolve(id)
-      group_key = realizer.group_key_for_id(id)
-      target = new_target(realizer, id, group_key)
-
-      if cache.has_key?(target)
-        log(:value_cached, target)
-        return cache[target]
-      end
-
-      log(:value_deferred, target)
-      scheduler.add(target)
-      proxy(target) do
-        realize_target(target)
-      end
     end
 
     # This iteratively resolves all outstanding deferred values, eventually
@@ -86,8 +77,23 @@ module Xe
     end
 
     # @protected
-    def new_target(source, id, group_key=nil)
-      Target.new(source, id, group_key)
+    def defer(deferrable, id, group_key=nil)
+      # Explicitly disallow deferred realization on disabled contexts. This
+      # case is handled internally by the realizer base class.
+      raise DeferError if disabled?
+      raise DeferError if !deferrable.is_a?(Deferrable)
+
+      target = Target.new(deferrable, id, group_key)
+      if cache.has_key?(target)
+        log(:value_cached, target)
+        return cache[target]
+      end
+
+      log(:value_deferred, target)
+      scheduler.add(target)
+      proxy(target) do
+        realize_target(target)
+      end
     end
 
     # @protected

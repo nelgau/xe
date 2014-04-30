@@ -1,68 +1,73 @@
 module Xe
-  class Context
-    class Event
-      include Enumerable
-      include Comparable
+  class Event
+    include Enumerable
+    include Comparable
 
-      attr_reader :key
-      attr_reader :realizer
-      attr_reader :group_key
-      attr_reader :group
+    attr_reader :key
+    attr_reader :deferrable
+    attr_reader :group_key
+    attr_reader :group
 
-      def self.for_target(target)
-        realizer = target.source
-        group_key = realizer.group_key_for_id(target)
-        group = realizer.new_group(group_key)
-        new(realizer, group_key, group)
-      end
+    def self.from_target(target)
+      deferrable = target.source
+      # The target's source must be an instance of deferrable.
+      raise DeferError if !deferrable.is_a?(Deferrable)
 
-      def self.key(realizer, group_key)
-        [realizer, group_key]
-      end
+      group_key = deferrable.group_key_for_id(target)
+      group = deferrable.new_group(group_key)
+      new(deferrable, group_key, group)
+    end
 
-      def self.target_key(target)
-        key(target.source, target.group_key)
-      end
+    def self.key(deferrable, group_key)
+      [deferrable, group_key]
+    end
 
-      def initialize(realizer, group_key, group)
-        @key = Event.key(realizer, group_key)
-        @realizer = realizer
-        @group_key = group_key
-        @group = group
-      end
+    def self.target_key(target)
+      key(target.source, target.group_key)
+    end
 
-      def <<(id)
-        group << id
-      end
+    def initialize(deferrable, group_key, group)
+      @key = Event.key(deferrable, group_key)
+      @deferrable = deferrable
+      @group_key = group_key
+      @group = group
+    end
 
-      def realize(&blk)
-        results = realizer.call(group_key, group)
-        each { |t| yield t, results[t.id] }
-        results
-      end
+    def <<(id)
+      group << id
+    end
 
-      def each(&blk)
-        group.each { |id| blk.call(target_for_id(id)) }
-      end
+    def realize(&blk)
+      results = deferrable.call(group)
+      each { |t| yield t, results[t.id] }
+      results
+    end
 
-      def count
-        group.count
-      end
+    def each(&blk)
+      to_enum.each(&blk)
+    end
 
-      def inspect
-        "<#Xe::Event key: [#{realizer}" \
-        "#{group_key ? ", #{group_key}" : nil}] " \
-        "count: #{count}>"
-      end
+    def count
+      group.count
+    end
 
-      def to_s
-        inspect
-      end
+    def inspect
+      "<#Xe::Event key: [#{deferrable}" \
+      "#{group_key ? ", #{group_key}" : nil}] " \
+      "count: #{count}>"
+    end
 
-      private
+    def to_s
+      inspect
+    end
 
-      def target_for_id(id)
-        Target.new(realizer, id, group_key)
+    private
+
+    def to_enum
+      ::Enumerator.new do |y|
+        group.each do |id|
+          y << Target.new(@deferrable, id, @group_key)
+        end
       end
     end
   end

@@ -30,7 +30,7 @@ module Xe
           return blk.call if context.disabled?
 
           # Create a new target for this component of the enumeration.
-          target = context.new_target(self, index)
+          target = Target.new(self, index)
 
           # Run the block inside of a fiber.
           result = nil

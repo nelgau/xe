@@ -11,10 +11,6 @@ require 'xe/realizer'
 require 'xe/enumerator'
 
 module Xe
-  class << self
-    attr_accessor :default_logger
-  end
-
   def self.context(options={}, &b)
     Context.wrap(options, &b)
   end
@@ -27,5 +23,9 @@ module Xe
     context do |c|
       c.enum(e, options).map(&b)
     end
+  end
+
+  class << self
+    attr_accessor :default_logger
   end
 end
