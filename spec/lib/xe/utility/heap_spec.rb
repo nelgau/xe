@@ -266,7 +266,7 @@ describe Xe::Heap do
     end
 
     context "when 1000 items are inserted and 500 randomly replaced" do
-      it "has the expected end state (#{STRESS_LEVEL} run(s))" do
+      it "has the expected end state (#{STRESS_LEVEL} runs)" do
         STRESS_LEVEL.times do |i|
           heap = Xe::Heap.new(&compare)
 
@@ -343,7 +343,7 @@ describe Xe::Heap do
     end
 
     context "when 1000 items are inserted and 500 randomly deleted" do
-      it "has the expected end state (#{STRESS_LEVEL} run(s))" do
+      it "has the expected end state (#{STRESS_LEVEL} runs)" do
         STRESS_LEVEL.times do |i|
           heap = Xe::Heap.new(&compare)
 
