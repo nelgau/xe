@@ -12,7 +12,8 @@ module Xe
       def wait(key, &blk)
         # If the current fiber isn't managed, we can't wait because we have
         # no assurances that it will behave as needed to correctly resolve all
-        # dependencies without deadlocking
+        # dependencies without deadlocking. Calling super here will force the
+        # realization the value represented by key.
         current = Fiber.current
         return super unless managed_fiber?(current)
         # Add the fiber to the list of waiters on this key.
@@ -33,7 +34,7 @@ module Xe
 
       # Returns the depth of the current managed fiber, or zero if the current
       # is the root or unmanaged.
-      def depth
+      def current_depth
         current = Fiber.current
         managed_fiber?(current) ? current.depth : 0
       end

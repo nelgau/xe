@@ -84,7 +84,7 @@ module Xe
       end
 
       # Returns the depth of the current fiber as an integer.
-      def depth
+      def current_depth
         # The root fiber has a depth of zero.
         top_fiber = stack.last
         managed_fiber?(top_fiber) ? top_fiber.depth : 0

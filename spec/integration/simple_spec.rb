@@ -15,12 +15,12 @@ describe "Xe - Simple Usage" do
       realizer[1].to_s
     end
 
-    expect(result).to eql('2')
+    expect(result).to eq('2')
   end
 
   it "executes a simple map enumeration" do
     result = Xe.map([1, 2, 3]) { |x| x }
-    expect(result).to eql([1, 2, 3])
+    expect(result).to eq([1, 2, 3])
   end
 
   it "maps using a realizer" do
@@ -31,7 +31,7 @@ describe "Xe - Simple Usage" do
     result = Xe.context do
       Xe.map([2, 3, 4]) { |x| realizer[x] }
     end
-    expect(result).to eql([4, 6, 8])
+    expect(result).to eq([4, 6, 8])
   end
 
   it "blocks enumeration fibers on accessing a proxied value" do
@@ -42,7 +42,7 @@ describe "Xe - Simple Usage" do
     result = Xe.context do
       Xe.map([2, 3, 4]) { |x| realizer[x].to_s }
     end
-    expect(result).to eql(['4', '6', '8'])
+    expect(result).to eq(['4', '6', '8'])
   end
 
   it "blocks enumeration fibers on accessing a proxied value" do
@@ -62,7 +62,7 @@ describe "Xe - Simple Usage" do
       end
     end
 
-    expect(result).to eql([['8', '12', '16'], ['8', '20', '24']])
+    expect(result).to eq([['8', '12', '16'], ['8', '20', '24']])
   end
 
 end

@@ -15,7 +15,7 @@ module Xe
 
       # Creates a new managed fiber.
       def new_fiber(&blk)
-        Xe::Fiber.new(self, depth + 1, &blk)
+        Xe::Fiber.new(self, current_depth + 1, &blk)
       end
 
       # Transfer control to a managed fiber for the first time.
@@ -28,9 +28,9 @@ module Xe
         fiber.is_a?(Xe::Fiber)
       end
 
-      # Suspend the current fiber until the given key is released. If the
-      # current fiber can't be suspended, the block is invoked if given. The
-      # default implementation cannot suspend.
+      # Suspend the current fiber until the given key is released with a value.
+      # If the current fiber can't be suspended, the block is invoked if given,
+      # and the result is returned. The default implementation can't suspend.
       def wait(key, &blk)
         blk.call(key) if block_given?
       end
@@ -56,19 +56,19 @@ module Xe
 
       # Returns the depth of the current fiber as an integer. The default
       # implementation considers all fibers to be unnested and therefore
-      # at a depth of zero.
-      def depth
+      # at a depth of one (relative to the root).
+      def current_depth
         0
       end
 
-      protected
-
+      # @protected
       # Pushes a waiter onto the list of a given key. Waiters can be arbitrary
       # values (i.e., fibers or other data structures).
       def push_waiter(key, waiter)
         (waiters[key] ||= []) << waiter
       end
 
+      # @protected
       # Pop and enumerate all waiters for a given key. These waiters are
       # dequeued immediately and all at once to clear the path for new waiters
       # that might block on the same key after control is resumed.

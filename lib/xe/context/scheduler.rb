@@ -9,19 +9,34 @@ module Xe
         @events = {}
       end
 
-      def add(target)
-        event = create_event(target)
-        event << target.id
-        policy.update_event(event)
+      # Adds a target to the queue of realizations, creating an event for it
+      # if one doesn't exist. It notifies the policy of the change.
+      def add_target(target)
+        key = Event.target_key(target)
+        event = events[key]
+        if event
+          # If event exists, extend it with the id of the target.
+          event << target.id
+          policy.update_event(event)
+        else
+          # The event doesn't exists so create a new one.
+          event = Event.from_target(target)
+          events[key] = event
+          event << target.id
+          policy.add_event(event)
+        end
       end
 
-      def wait(target, depth)
+      # Notifies the policy that a fiber has blocked on the realization of the
+      # given target at a particular depth.
+      def wait_target(target, depth)
         key = Event.target_key(target)
         event = events[key]
         policy.wait_event(event, depth) if event
       end
 
-      # Pops and returns an event, or nil.
+      # Returns and removes an event from the queue of realizations, or nil
+      # if the queue is empty.
       def next_event
         # Give the policy the oportunity to select the event. If the policy
         # defers the decision (by returning nil), select the first event in the
@@ -39,20 +54,12 @@ module Xe
         consume_event(key)
       end
 
+      # Returns true if there are no events waiting to be realized.
       def empty?
         events.empty?
       end
 
       private
-
-      def create_event(target)
-        key = Event.target_key(target)
-        events[key] ||= begin
-          Event.from_target(target).tap do|event|
-            policy.add_event(event)
-          end
-        end
-      end
 
       def consume_event(key)
         events.delete(key).tap do |event|

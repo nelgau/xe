@@ -8,7 +8,7 @@ module Xe
     end
 
     # Returns a key that will be used to group ids into batches.
-    def group_key_for_id(id)
+    def group_key(id)
       nil
     end
 

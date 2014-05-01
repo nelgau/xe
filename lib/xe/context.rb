@@ -38,11 +38,11 @@ module Xe
 
     def initialize(options={})
       @policy = options[:policy] || Policy::Default.new
-      @logger = logger_from_option(options[:logger])
+      @logger = Logger.from_option(options[:logger])
       @disabled = options.fetch(:disabled, false)
 
       @scheduler = Scheduler.new(@policy)
-      @loom = Loom::Yield.new
+      @loom = Loom::Default.new
       @proxies = {}
       @cache = {}
     end
@@ -90,7 +90,7 @@ module Xe
       end
 
       log(:value_deferred, target)
-      scheduler.add(target)
+      scheduler.add_target(target)
       proxy(target) do
         realize_target(target)
       end
@@ -136,7 +136,7 @@ module Xe
 
     def wait(target, &blk)
       log(:fiber_wait, target)
-      scheduler.wait(target, loom.depth)
+      scheduler.wait_target(target, loom.current_depth)
       loom.wait(target, &blk)
     end
 
@@ -151,11 +151,6 @@ module Xe
       log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
       return unless target_proxies
       target_proxies.each { |p| p.__set_subject(value) }
-    end
-
-    def logger_from_option(option)
-      logger   = option == :stdout ? Logger::Text.new : option
-      logger ||= Xe.default_logger
     end
 
     def log(*args)

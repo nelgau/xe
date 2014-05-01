@@ -1,8 +1,8 @@
 module Xe
   module Logger
     class Base
-      def call(event, *args)
-        send(event, *args)
+      def call(type, *args)
+        send(type, *args)
       end
 
       private

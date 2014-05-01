@@ -3,58 +3,72 @@ module Xe
     include Enumerable
     include Comparable
 
-    attr_reader :key
     attr_reader :deferrable
     attr_reader :group_key
     attr_reader :group
+    attr_reader :key
 
+    # Create an event that represents a group of targets similar to that given.
     def self.from_target(target)
       deferrable = target.source
       # The target's source must be an instance of deferrable.
-      raise DeferError if !deferrable.is_a?(Deferrable)
-
-      group_key = deferrable.group_key_for_id(target)
-      group = deferrable.new_group(group_key)
-      new(deferrable, group_key, group)
+      if !deferrable.is_a?(Deferrable)
+        raise DeferError, "The target's source isn't deferrable."
+      end
+      new(deferrable, target.group_key)
     end
 
+    # Returns an event key for the given deferrable group.
     def self.key(deferrable, group_key)
       [deferrable, group_key]
     end
 
+    # Retruns the event key associated with targets similar to that given.
     def self.target_key(target)
       key(target.source, target.group_key)
     end
 
-    def initialize(deferrable, group_key, group)
-      @key = Event.key(deferrable, group_key)
+    def initialize(deferrable, group_key)
       @deferrable = deferrable
       @group_key = group_key
-      @group = group
+      @group = deferrable.new_group(group_key)
+      @key = Event.key(deferrable, group_key)
     end
 
+    # Adds a single id to the event's group.
     def <<(id)
       group << id
     end
 
+    # Realizes all values in the event's group using the deferrable and returns
+    # the results as a hash from ids to values. If a block is given, it
+    # additionally invokes the block once for each id with the target and value.
+    # value represented as a pair.
     def realize(&blk)
       results = deferrable.call(group)
-      each { |t| yield t, results[t.id] }
+      each { |t| yield t, results[t.id] } if block_given?
       results
     end
 
+    # Enumerates over all targets in the event.
     def each(&blk)
       to_enum.each(&blk)
     end
 
-    def count
-      group.count
+    # Returns the count of ids in the event's group.
+    def length
+      group.length
+    end
+
+    # Returns true if the event is empty.
+    def empty?
+      group.empty?
     end
 
     def inspect
       "<#Xe::Event key: [#{deferrable}" \
       "#{group_key ? ", #{group_key}" : nil}] " \
-      "count: #{count}>"
+      "length: #{length}>"
     end
 
     def to_s

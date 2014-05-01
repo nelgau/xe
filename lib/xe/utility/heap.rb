@@ -2,6 +2,7 @@ module Xe
   class Heap
     include Enumerable
 
+    # Represents an item in the heap.
     Node = Struct.new(:key, :value)
 
     attr_reader :compare
@@ -14,33 +15,42 @@ module Xe
       @nodes = []
     end
 
+    # Calls blk once for each item in the heap, passing that element as a
+    # parameter. If no block is given, an enumerator is returned instead. The
+    # first item is guaranteed to compare highest relative to the comparator
+    # but all other items are returned in no particular order.
     def each(&blk)
       to_enum.each(&blk)
     end
 
+    # Returns the number of items in the heap.
     def length
       @nodes.length.to_i
     end
 
+    # Returns true if there are no items in the heap.
     def empty?
       @nodes.empty?
     end
 
+    # Returns the value for a given key, or nil.
     def [](key)
       index = @indexes[key]
       return unless index
       @nodes[index].value
     end
 
+    # Returns true if there is an item in the heap with the given key.
     def has_key?(key)
       !!@indexes[key]
     end
 
+    # Assigns a vlaue for the given key, or replaces an existing one.
     def []=(key, value)
       push(key, value)
     end
 
-    # Adds a new value or replaces an existing one.
+    # Assigns a vlaue for the given key, or replaces an existing one.
     def push(key, value)
       index = @indexes[key]
       if index
@@ -51,27 +61,36 @@ module Xe
       end
     end
 
+    # Removes the item for a given key and returns the key and value as a pair.
+    # If there is no item with the given key, it returns nil.
     def delete(key)
       index = @indexes[key]
       return unless index
       remove(index).to_a
     end
 
+    # Re-sort the item with the given key.
     def update(key)
       index = @indexes[key]
       sift(index) if index
     end
 
+    # Returns the item that compares highest relative to the comparator as a
+    # pair, or nil if the heap is empty. The heap is not mutated.
     def peek
       return if @nodes.empty?
       @nodes[0].to_a
     end
 
+    # Removes and returns the item that compares highest relative to the
+    # comparator as a pair, or nil if the heap is empty. The heap is mutated.
     def pop
       return if @nodes.empty?
       remove(0).to_a
     end
 
+    # Removes and returns all items as pairs in sorted order relative to the
+    # comparator. The heap is mutated and empty after this operation.
     def pop_all
       result = []
       until @nodes.empty?

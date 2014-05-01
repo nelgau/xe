@@ -21,8 +21,8 @@ module Xe
           @min_depth = depth if depth < @min_depth
         end
 
-        def count
-          event.count
+        def length
+          event.length
         end
       end
 
@@ -34,10 +34,10 @@ module Xe
           # larger wins that are nested deeply and diffusely.
           cmp = ed2.min_depth <=> ed1.min_depth
           next cmp if cmp != 0
-          # Otherwise, choose the smallest count. The rationale is that big
+          # Otherwise, choose the smallest length. The rationale is that big
           # groups are likely to become even bigger as the search proceeds,
           # possibly allowing for very large batching gains at the end.
-          ed2.count <=> ed1.count
+          ed2.length <=> ed1.length
         end
       end
 

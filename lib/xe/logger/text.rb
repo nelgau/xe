@@ -2,21 +2,17 @@ require 'logger'
 
 module Xe
   module Logger
-    class Text
+    class Text < Base
       attr_reader :logger
 
       def initialize(options={})
         @logger = options[:logger] || default_logger
       end
 
-      def call(event, *args)
-        send(event, *args)
-      end
-
       private
 
       def event_realize(event)
-        log "#{event}: Realizing #{event.count} values."
+        log "#{event}: Realizing #{event.length} values."
       end
 
       def value_cached(target)
@@ -64,7 +60,7 @@ module Xe
       end
 
       def finalize_step(event)
-        log "Finalizing event with #{event.count} values."
+        log "Finalizing event with #{event.length} values."
       end
 
       def finalize_deadlock

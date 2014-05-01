@@ -17,6 +17,10 @@ module Xe
       @__has_subject = false
     end
 
+    def ==(other)
+      __resolve_subject == other
+    end
+
     def method_missing(method, *args, &blk)
       __resolve_subject.__send__(method, *args, &blk)
     end

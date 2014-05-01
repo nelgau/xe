@@ -8,7 +8,7 @@ describe Xe::Policy::Heap do
   let(:deferrable) { Xe::Deferrable.new }
 
   def new_event(group_key)
-    Xe::Event.new(deferrable, group_key, [])
+    Xe::Event.new(deferrable, group_key)
   end
 
   describe Xe::Policy::Heap::EventData do
@@ -41,13 +41,13 @@ describe Xe::Policy::Heap do
       end
     end
 
-    describe '#count' do
+    describe '#length' do
       before do
         5.times { |i| event << i }
       end
 
       it "is the count of ids in the event" do
-        expect(subject.count).to eq(5)
+        expect(subject.length).to eq(5)
       end
     end
 
@@ -62,14 +62,14 @@ describe Xe::Policy::Heap do
 
     describe '#call' do
 
-      let(:event1_depth) { 0 }
-      let(:event1_count) { 0 }
+      let(:event1_depth)  { 0 }
+      let(:event1_length) { 0 }
 
-      let(:event2_depth) { 0 }
-      let(:event2_count) { 0 }
+      let(:event2_depth)  { 0 }
+      let(:event2_length) { 0 }
 
-      let(:event1) { stub_event(event1_count) }
-      let(:event2) { stub_event(event2_count) }
+      let(:event1) { stub_event(event1_length) }
+      let(:event2) { stub_event(event2_length) }
 
       let(:data1) { Xe::Policy::Heap::EventData.new(event1, event1_depth) }
       let(:data2) { Xe::Policy::Heap::EventData.new(event2, event2_depth) }
@@ -78,9 +78,9 @@ describe Xe::Policy::Heap do
         subject.call(data1, data2)
       end
 
-      def stub_event(count)
+      def stub_event(length)
         double(Xe::Event).tap do |event|
-          event.stub(:count).and_return(count)
+          event.stub(:length).and_return(length)
         end
       end
 
@@ -108,8 +108,8 @@ describe Xe::Policy::Heap do
         let(:event2_depth) { 1 }
 
         context "when the first is smaller than the second" do
-          let(:event1_count) { 1 }
-          let(:event2_count) { 2 }
+          let(:event1_length) { 1 }
+          let(:event2_length) { 2 }
 
           it "is 1" do
             expect(invoke_call).to eq(1)
@@ -117,8 +117,8 @@ describe Xe::Policy::Heap do
         end
 
         context "when the first is larger than the second" do
-          let(:event1_count) { 2 }
-          let(:event2_count) { 1 }
+          let(:event1_length) { 2 }
+          let(:event2_length) { 1 }
 
           it "is -1" do
             expect(invoke_call).to eq(-1)
@@ -126,8 +126,8 @@ describe Xe::Policy::Heap do
         end
 
         context "when both are the same size" do
-          let(:event1_count) { 1 }
-          let(:event2_count) { 1 }
+          let(:event1_length) { 1 }
+          let(:event2_length) { 1 }
 
           it "is 0" do
             expect(invoke_call).to eq(0)
@@ -169,7 +169,7 @@ describe Xe::Policy::Heap do
     let(:event_data) do
       double(Xe::Policy::Heap::EventData).tap do |event_data|
         event_data.stub(:min_depth).and_return(0)
-        event_data.stub(:count).and_return(0)
+        event_data.stub(:length).and_return(0)
       end
     end
 
