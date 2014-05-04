@@ -32,14 +32,15 @@ describe Xe::Realizer::Proc do
   describe '#perform' do
 
     let(:group) { [1, 2, 3] }
+    let(:key)   { 0 }
 
     it "calls #call_proc with the group" do
-      expect(realize_proc).to receive(:call).with(group)
-      subject.perform(group)
+      expect(realize_proc).to receive(:call).with(group, key)
+      subject.perform(group, key)
     end
 
     it "returns the result of calling #realize_proc" do
-      expect(subject.perform(group)).to eq(results)
+      expect(subject.perform(group, key)).to eq(results)
     end
 
   end

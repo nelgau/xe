@@ -44,7 +44,7 @@ module Xe
     # additionally invokes the block once for each id with the target and value.
     # value represented as a pair.
     def realize(&blk)
-      results = deferrable.call(group)
+      results = deferrable.call(group, group_key)
       each { |t| yield t, results[t.id] } if block_given?
       results
     end

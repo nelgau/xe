@@ -33,7 +33,7 @@ module Xe
         # Otherwise, realize the value immediately.
         Context.active? ?
           Context.current.defer(self, id, key) :
-          call([id])[id]
+          call([id], key)[id]
       end
 
       # Override these methods to implement a realizer.
@@ -44,7 +44,7 @@ module Xe
       # type of the group instance (as returned by the #new_group method), you
       # can pass `:group_as_array => false` to the constructor or override the
       # as_array method when subclassing.
-      def perform(group)
+      def perform(group, key)
         raise NotImplementedError
       end
 
@@ -61,6 +61,12 @@ module Xe
         Set.new
       end
 
+      # Returns true if the realizer should coerce the enumerable group type
+      # to an array before invoking the perform method.
+      def group_as_array?
+        !@group_as_array.nil? ? @group_as_array : true
+      end
+
       # Initialize a new realizer instance. You can pass
       # `:group_as_array => false` as an option to disable to the default
       # coercion of realization groups to arrays.
@@ -68,18 +74,12 @@ module Xe
         @group_as_array = options.fetch(:group_as_array, true)
       end
 
-      # Returns true if the realizer should coerce the enumerable group type
-      # to an array before invoking the perform method.
-      def group_as_array?
-        !@group_as_array.nil? ? @group_as_array : true
-      end
-
       # This method is overriden in subclasses to customize the sematics of the
       # return values from #perform. The default implementation is passthrough.
-      def call(group)
+      def call(group, key)
         # Optionally coerce the group enumerable to an array.
         group = group.to_a if group_as_array?
-        perform(group)
+        perform(group, key)
       end
 
       def inspect

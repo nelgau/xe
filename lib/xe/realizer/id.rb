@@ -29,13 +29,13 @@ module Xe
       # identify using the proc passed to the initializer. The group argument
       # may be of the type returned by the #new_group method, or it may be an
       # arbitrary object instance that conforms to the enumerable interface.
-      def perform(group)
+      def perform(group, key)
         raise NotImplementedError
       end
 
       # Calls perform and returns a hash from derived identifiers (as keys) to
       # realized values. Derivation uses the #id_proc attribute.
-      def call(group)
+      def call(group, key)
         super.each_with_object({}) do |v, rs|
           rs[@id_proc.call(v)] = v
         end

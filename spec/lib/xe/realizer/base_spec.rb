@@ -118,9 +118,10 @@ describe Xe::Realizer::Base do
   describe '#perform' do
 
     let(:group) { [1, 2, 3] }
+    let(:key)   { 1 }
 
     it "raises NotImplementedError" do
-      expect { subject.perform(group) }.to raise_error(NotImplementedError)
+      expect { subject.perform(group, key) }.to raise_error(NotImplementedError)
     end
 
   end
@@ -188,11 +189,12 @@ describe Xe::Realizer::Base do
 
     let(:ids)   { [1, 2, 3] }
     let(:group) { Array.new(ids) }
+    let(:key)   { 2 }
 
     it "invokes #perform with the ids" do
       captured_ids = nil
       subject.stub(:perform) { |group| captured_ids = group }
-      subject.call(group)
+      subject.call(group, key)
       expect(captured_ids).to match_array(ids)
     end
 
@@ -207,14 +209,14 @@ describe Xe::Realizer::Base do
         it "invokes #perform with the ids" do
           captured_ids = nil
           subject.stub(:perform) { |group| captured_ids = group }
-          subject.call(group)
+          subject.call(group, key)
           expect(captured_ids).to match_array(ids)
         end
 
         it "invoke #perform after coercing the group to an array" do
           captured_ids = nil
           subject.stub(:perform) { |group| captured_ids = group }
-          subject.call(group)
+          subject.call(group, key)
           expect(captured_ids).to be_an_instance_of(Array)
         end
       end

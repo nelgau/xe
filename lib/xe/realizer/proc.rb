@@ -15,8 +15,8 @@ module Xe
       end
 
       # Invokes #realize_proc to return the result map.
-      def perform(group)
-        @realize_proc.call(group)
+      def perform(group, key)
+        @realize_proc.call(group, key)
       end
 
       def inspect

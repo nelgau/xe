@@ -67,8 +67,11 @@ describe Xe::Realizer::Id do
 
   describe '#perform' do
 
+    let(:group) { [1, 2, 3] }
+    let(:key)   { 2 }
+
     it "raises NotImplementedError" do
-      expect { subject.perform([1, 2, 3]) }.to raise_error(NotImplementedError)
+      expect { subject.perform(group, key) }.to raise_error(NotImplementedError)
     end
 
   end
@@ -76,6 +79,8 @@ describe Xe::Realizer::Id do
   describe '#call' do
 
     let(:group)   { [10, 22, 23] }
+    let(:key)     { 2 }
+
     let(:results) { group.map { |id| new_value_mock(id) } }
     let(:id_proc) { Proc.new { |v| v.id2 } }
 
@@ -97,12 +102,12 @@ describe Xe::Realizer::Id do
         results
       end
 
-      subject.call(group)
+      subject.call(group, key)
       expect(captured_group).to eq(group)
     end
 
     it "returns a map from ids to results" do
-      expect(subject.call(group)).to eq(expected)
+      expect(subject.call(group, key)).to eq(expected)
     end
 
   end
