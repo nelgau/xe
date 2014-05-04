@@ -71,7 +71,9 @@ describe Xe::Context::Scheduler do
 
       it "notifies the policy that a new event has been created" do
         captured_event = nil
-        policy.should_receive(:add_event) { |event| captured_event = event }
+        expect(policy).to receive(:add_event) do |event|
+          captured_event = event
+        end
         subject.add_target(target1)
         expect(captured_event).to_not be_nil
         expect(captured_event).to eq(get_event(target1))
@@ -98,7 +100,9 @@ describe Xe::Context::Scheduler do
 
       it "notifies the policy that an event has been updated" do
         captured_event = nil
-        policy.should_receive(:update_event) { |event| captured_event = event }
+        expect(policy).to receive(:update_event) do |event|
+          captured_event = event
+        end
         subject.add_target(target2)
         expect(captured_event).to_not be_nil
         expect(captured_event).to eq(get_event(target2))
@@ -125,7 +129,7 @@ describe Xe::Context::Scheduler do
       it "notifies the policy that a fiber is waiting on an event" do
         captured_event = nil
         captured_depth = 0
-        policy.should_receive(:wait_event) do |event, depth|
+        expect(policy).to receive(:wait_event) do |event, depth|
           captured_event = event
           captured_depth = depth
         end
@@ -164,7 +168,9 @@ describe Xe::Context::Scheduler do
 
       it "notifies the policy that the event has been removed" do
         captured_event = nil
-        policy.should_receive(:remove_event) { |event| captured_event = event }
+        expect(policy).to receive(:remove_event) do |event|
+          captured_event = event
+        end
         event = subject.next_event
         expect(captured_event).to_not be_nil
         expect(captured_event).to eq(event)
@@ -229,7 +235,9 @@ describe Xe::Context::Scheduler do
 
       it "notifies the policy that the event has been removed" do
         captured_event = nil
-        policy.should_receive(:remove_event) { |event| captured_event = event }
+        expect(policy).to receive(:remove_event) do |event|
+          captured_event = event
+        end
         event = subject.pop_event(target)
         expect(captured_event).to_not be_nil
         expect(captured_event).to eq(event)

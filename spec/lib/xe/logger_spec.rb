@@ -36,7 +36,7 @@ describe Xe::Logger do
     describe '#call' do
 
       it "invokes a method by type" do
-        subject.should_receive(:event_realize).with(event)
+        expect(subject).to receive(:event_realize).with(event)
         subject.call(:event_realize, event)
       end
 

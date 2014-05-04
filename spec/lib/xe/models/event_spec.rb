@@ -123,7 +123,7 @@ describe Xe::Event do
     end
 
     it "calls the event's deferrable with the group" do
-      deferrable.should_receive(:call).with(subject.group)
+      expect(deferrable).to receive(:call).with(subject.group)
       subject.realize
     end
 

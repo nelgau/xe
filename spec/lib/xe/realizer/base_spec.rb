@@ -21,7 +21,7 @@ describe Xe::Realizer::Base do
     end
 
     it "calls #[] on an instance of Xe::Realizer::Base" do
-      @realizer.should_receive(:[]).with(1)
+      expect(@realizer).to receive(:[]).with(1)
       klass[1]
     end
 
@@ -55,7 +55,7 @@ describe Xe::Realizer::Base do
     end
 
     it "calls Proxy.resolve with the id" do
-      Xe::Proxy.should_receive(:resolve).with(1)
+      expect(Xe::Proxy).to receive(:resolve).with(1)
       subject[1]
     end
 
@@ -63,7 +63,7 @@ describe Xe::Realizer::Base do
       let(:disabled) { false }
 
       it "calls defer on the current context" do
-        context.should_receive(:defer).with(subject, proxy_id, group_key)
+        expect(context).to receive(:defer).with(subject, proxy_id, group_key)
         subject[1]
       end
     end

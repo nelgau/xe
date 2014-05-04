@@ -31,7 +31,7 @@ describe Xe::Fiber do
   describe '#run' do
 
     it "invokes #run_fiber on the loom" do
-      loom.should_receive(:run_fiber).with(subject, *args)
+      expect(loom).to receive(:run_fiber).with(subject, *args)
       subject.run(*args)
     end
 

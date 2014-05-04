@@ -34,7 +34,7 @@ describe Xe::Realizer::Proc do
     let(:group) { [1, 2, 3] }
 
     it "calls #call_proc with the group" do
-      realize_proc.should_receive(:call).with(group)
+      expect(realize_proc).to receive(:call).with(group)
       subject.call(group)
     end
 
