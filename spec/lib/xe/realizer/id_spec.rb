@@ -1,23 +1,13 @@
 require 'spec_helper'
 
 describe Xe::Realizer::Id do
+  include Xe::Test::Mock::Realizer::Id
 
   subject { klass.new(&id_proc) }
 
   let(:klass)   { Class.new(Xe::Realizer::Id) }
+  let(:value)   { new_value_mock(10) }
   let(:id_proc) { nil }
-
-  class RealizedValue
-    attr_reader :id
-    attr_reader :id2
-
-    def initialize(id)
-      @id = id
-      @id2 = id + 1
-    end
-  end
-
-  let(:value) { RealizedValue.new(10) }
 
   describe '.id' do
 
@@ -86,7 +76,7 @@ describe Xe::Realizer::Id do
   describe '#call' do
 
     let(:group)   { [10, 22, 23] }
-    let(:results) { group.map { |id| RealizedValue.new(id) } }
+    let(:results) { group.map { |id| new_value_mock(id) } }
     let(:id_proc) { Proc.new { |v| v.id2 } }
 
     let(:expected) do

@@ -2,9 +2,10 @@ require 'spec_helper'
 require 'set'
 
 describe Xe::Heap do
+  include Xe::Test::Mock::Heap
 
+  subject       { Xe::Heap.new(&compare) }
   let(:compare) { Proc.new { |o1, o2| o1 <=> o2 } }
-  subject { Xe::Heap.new(&compare) }
 
   # Verify the heap property.
   def is_heap?(heap)
@@ -192,8 +193,8 @@ describe Xe::Heap do
     end
 
     context "when 1000 random items are inserted" do
-      it "has the expected end state (#{STRESS_LEVEL} run(s))" do
-        STRESS_LEVEL.times do
+      it "has the expected end state (#{XE_STRESS_LEVEL} run(s))" do
+        XE_STRESS_LEVEL.times do
           heap = Xe::Heap.new(&compare)
 
           pushed_items = {}
@@ -266,8 +267,8 @@ describe Xe::Heap do
     end
 
     context "when 1000 items are inserted and 500 randomly replaced" do
-      it "has the expected end state (#{STRESS_LEVEL} runs)" do
-        STRESS_LEVEL.times do |i|
+      it "has the expected end state (#{XE_STRESS_LEVEL} runs)" do
+        XE_STRESS_LEVEL.times do |i|
           heap = Xe::Heap.new(&compare)
 
           1000.times do |key|
@@ -343,8 +344,8 @@ describe Xe::Heap do
     end
 
     context "when 1000 items are inserted and 500 randomly deleted" do
-      it "has the expected end state (#{STRESS_LEVEL} runs)" do
-        STRESS_LEVEL.times do |i|
+      it "has the expected end state (#{XE_STRESS_LEVEL} runs)" do
+        XE_STRESS_LEVEL.times do |i|
           heap = Xe::Heap.new(&compare)
 
           1000.times do |key|
@@ -374,13 +375,6 @@ describe Xe::Heap do
 
   describe '#update' do
 
-    class Value < Struct.new(:internal)
-      include Comparable
-      def <=>(other)
-        internal <=> other.internal
-      end
-    end
-
     let(:push_items) { [
       ['b', 3],
       ['a', 4],
@@ -391,7 +385,7 @@ describe Xe::Heap do
 
     before do
       push_items.each do |key, internal|
-        subject.push(key, Value.new(internal))
+        subject.push(key, new_value_mock(internal))
       end
     end
 

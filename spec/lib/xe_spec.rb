@@ -1,12 +1,25 @@
 require 'spec_helper'
 
 describe Xe do
+
   subject { Xe }
 
-  let(:proc) do
-    Proc.new do |ids|
-      ids.each_with_object({}) { |i, h| h[i] = i * 2 }
+  let(:mapping_proc) do
+    Proc.new do |x|
+      x * 2
     end
+  end
+
+  let(:realizer_proc) do
+    Proc.new do |ids|
+      ids.each_with_object({}) do |i, h|
+        h[i] = mapping_proc.call(i)
+      end
+    end
+  end
+
+  def invoke_realizer
+    subject.realizer(&realizer_proc)
   end
 
   describe '.context' do
@@ -26,27 +39,39 @@ describe Xe do
   describe '.realizer' do
 
     it "returns a Xe::Realizer::Proc" do
-      expect(subject.realizer(&proc)).to be_an_instance_of(Xe::Realizer::Proc)
+      expect(invoke_realizer).to be_an_instance_of(Xe::Realizer::Proc)
     end
 
     it "returns a realizer which immediate yields values" do
-      realizer = subject.realizer(&proc)
-      expect(realizer[2]).to eq(4)
+      expect(invoke_realizer[2]).to eq(4)
     end
 
   end
 
   describe '.map' do
 
-    it "maps" do
-      result = subject.map([1, 2, 3]) { |i| i * 3 }
-      expect(result).to eq([3, 6, 9])
+    let(:ids)      { [1, 2, 3, 4] }
+    let(:output)   { [2, 4, 6, 8] }
+    let(:realizer) { invoke_realizer }
+
+    it "maps over an enumeable" do
+      result = subject.map(ids, &mapping_proc)
+      expect(result).to eq(output)
     end
 
     it "maps using deferred values" do
-      realizer = subject.realizer(&proc)
-      result = subject.map([1, 2, 3]) { |i| realizer[i] }
-      expect(result).to eq([2, 4, 6])
+      result = subject.map(ids) { |i| realizer[i] }
+      expect(result).to eq(output)
+    end
+
+    context "while wrapped in a context" do
+      let(:output) { [4, 8, 12, 16] }
+
+      it "maps deferred values to deferred values" do
+        result1 = subject.map(ids) { |i| realizer[i] }
+        result2 = subject.map(result1) { |i| realizer[i] }
+        expect(result2).to eq(output)
+      end
     end
 
   end

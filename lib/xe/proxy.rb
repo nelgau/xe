@@ -1,3 +1,7 @@
+require 'xe/proxy/basic_object'
+require 'xe/proxy/identification'
+require 'xe/proxy/debugging'
+
 module Xe
   # The proxy class permits limited operations on the results of computations
   # that have yet to complete. Proxies can be stored in data structures, passed
@@ -11,14 +15,21 @@ module Xe
   #
   # The resolution of a proxy can occur in two ways: 1) an external process,
   # holding a reference to the proxy, may call #__set_subject, or 2) a client
-  # may invoke an arbitrary method on the proxy (or :==), forcing the
+  # may invoke an arbitrary method on the proxy (or say, :==), forcing the
   # resolution of the proxy via the `subject_proc` passed to its initializer.
   #
   # In either case, once resolved, the proxy drops all external references
   # (except the value of the subject) by setting @subject_proc to nil. This
   # allows the enclosing scope of the Proc to be garbage collected and permits
   # proxies to outlive the context that created them.
+  #
+  # When the resolved subject of a proxy is itself another proxy, this class
+  # attempts to recursively memoize subject of the deepest proxy in the chain
+  # as its own, optionally forcing the resolution of all intermediate proxies.
   class Proxy < BasicObject
+    include Proxy::BasicObject
+    include Proxy::Identification
+
     # I'm unhappy with this hack. I'd prefer to have a cleaner solution for
     # distinguishing proxies from values. However, each alternative seems to
     # have non-negligable performance overhead that I'm uncomfortable
@@ -63,7 +74,12 @@ module Xe
       true
     end
 
-    attr_reader :__subject_proc
+    # Enables instance method tracing for the proxy.
+    def self.debug!
+      send(:include, Debugging)
+    end
+
+    attr_reader :__resolve_proc
     attr_reader :__subject
 
     # Returns true if obj is a proxy, and false if it's a value.
@@ -78,92 +94,93 @@ module Xe
     # resolution always occurs at well-defined moments and not in arbitrary
     # places within the implementation of the context.
     def self.resolve(obj)
-      obj.__xe_proxy? ? obj.__resolve(true) : obj
+      obj.__xe_proxy? ? obj.__resolve_value : obj
     end
 
-    def initialize(&subject_proc)
-      @__subject_proc = subject_proc
+    # Accepts a proc that will be called when the proxy is forced to resolve.
+    # The return value will become the immediate subject of the proxy (at least
+    # until an attempt is made to memoize the subject's chain).
+    def initialize(&resolve_proc)
+      ::Kernel.raise ::ArgumentError, "No resolve block given" if !resolve_proc
+      @__resolve_proc = resolve_proc
+      @__subject = nil
       @__has_subject = false
       @__has_value = false
     end
 
-    def ==(other)
-      __resolve == other
-    end
-
+    # After resolution, Delegate a method invocation to the proxy's value.
     def method_missing(method, *args, &blk)
-      __resolve.__send__(method, *args, &blk)
+      __resolve_value.__send__(method, *args, &blk)
     end
 
-    # Proxy resolution
+    # Resolution
 
-    # @protected
+    # Resolves and returns the subject. If the subject is itself a proxy, this
+    # method walks the chain of resolved proxies and returns the deepest
+    # subject (by default, without forcing resolution). If the second argument
+    # (to_value) is true, it will resolve as necessary to ensure that the
+    # returned result is a value.
     def __resolve(to_value=false)
       return @__subject if @__has_value
       __resolve_subject if !@__has_subject
-      __memoize_subject(self, to_value) if !@__has_value
-      @__subject
+      __memoize_subject(self, to_value)
+    end
+
+    # Recursely resolve the proxy until the subject is value. This method
+    # always returns a value.
+    def __resolve_value
+      @__has_value ? @__subject : __resolve(true)
+    end
+
+    # Returns true if the proxy is resolved and has a subject.
+    def __resolved?
+      @__has_subject
+    end
+
+    # Returns true if the proxy is resolved and the subject is a value.
+    def __value?
+      @__has_value
     end
 
     # @protected
+    # Set the proxy's subject and drops all references to the enclosing scope
+    # of the resolution procedure. This method is called by the context when a
+    # realization event occurs. It is not a public interface.
     def __set_subject(subject)
       @__subject = subject
       @__has_subject = true
       @__has_value = !subject.__xe_proxy?
       # Allow the garbage collector to reclaim the block's captured scope.
-      @__subject_proc = nil
-      subject
+      @__resolve_proc = nil
+      @__subject
     end
 
+    # The following methods are used for deep subject resolution and
+    # memoization. They are a private interface between proxies.
+
     # @protected
+    # If the receiver doesn't have a subject, set it using the realization
+    # procedure passed to the initializer. Returns the receiver's subject.
     def __resolve_subject
-      __set_subject(@__subject_proc.call) if !@__has_subject
+      __set_subject(@__resolve_proc.call) if !@__has_subject
+      @__subject
     end
 
     # @protected
-    # This method will memoize the deepest subject in the chain into the
-    # receiver. If the to_value argument is true, it triggers the immediate
-    # resolution of all proxies in the chain to guarantee that the receiver's
-    # subject will be a value when the method returns control to the caller.
+    # Memoize the deepest subject in the chain into the receiver. If the
+    # to_value argument is true, it triggers the immediate resolution of all
+    # proxies in the chain to guarantee that the receiver's subject will be a
+    # value when the method returns control to the caller.
     def __memoize_subject(initiator, to_value)
       # Termination condition. The final proxy in the chain is a value.
       return @__subject if @__has_value
       # If need to return a value, each proxy in the chain must be resolved.
       @__subject.__resolve_subject if to_value
       # Termination condition. The subject has no subject.
-      return @__subject if !@__subject.__subject?
+      return @__subject if !@__subject.__resolved?
       # Set the receiver's subject to the deepest resolved subject in the chain
       # and return the current subject (recursion).
       __set_subject(@__subject.__memoize_subject(initiator, to_value))
-    end
-
-    # @protected
-    def __subject?
-      @__has_subject
-    end
-
-    # Proxy identification for unit testing.
-
-    # @protected
-    # TESTING ONLY
-    # Returns a unique identifier which identifies this proxy. It should only
-    # be used to distinguish proxy objects for unit testing (as #object_id will
-    # be correctly delegated to the resolved subject). This value is computed
-    # lazily and doesn't reflect the order in which proxies are created.
-    def __proxy_id
-      @__proxy_id ||= __next_proxy_id
-    end
-
-    # @protected
-    # TESTING ONLY
-    # Thread-safe. Returns a unique, monotonically increasing integer used to
-    # identify proxy objects in units tests for chain memoization.
-    def __next_proxy_id
-      @__id_mutex ||= Mutex.new
-      @__id_mutex.synchronize do
-        @__last_proxy_id ||= -1
-        @__last_proxy_id += 1
-      end
     end
   end
 end

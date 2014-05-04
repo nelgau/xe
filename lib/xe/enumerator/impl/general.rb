@@ -10,11 +10,11 @@ module Xe
 
         Enumerable.instance_methods.each do |m|
           # The super keyword is incompatible with #define_method.
-          class_eval <<-EOS
+          class_eval <<-RUBY, __FILE__, __LINE__ + 1
             def #{m}(*args, &blk)
               run { super(*args, &blk) }
             end
-          EOS
+          RUBY
         end
       end
     end

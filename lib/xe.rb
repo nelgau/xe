@@ -1,8 +1,11 @@
 require 'xe/version'
 require 'xe/errors'
-require 'xe/logger'
-require 'xe/models'
+
 require 'xe/utility'
+require 'xe/logger'
+
+require 'xe/proxy'
+require 'xe/models'
 require 'xe/context'
 require 'xe/policy'
 require 'xe/realizer'

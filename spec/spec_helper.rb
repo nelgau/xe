@@ -1,9 +1,10 @@
 require 'simplecov'
-SimpleCov.start do
-  add_filter 'spec'
-end
-
-require 'xe'
+SimpleCov.start { add_filter 'spec' }
 
 # Count of randomized iterations to run
-STRESS_LEVEL = 0
+XE_STRESS_LEVEL = 0
+XE_NO_SINGLETON_PROXY = true
+
+require 'xe'
+require 'support/base'
+require 'support/mock'
