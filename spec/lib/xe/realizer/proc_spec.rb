@@ -29,17 +29,17 @@ describe Xe::Realizer::Proc do
 
   end
 
-  describe '#call' do
+  describe '#perform' do
 
     let(:group) { [1, 2, 3] }
 
     it "calls #call_proc with the group" do
       expect(realize_proc).to receive(:call).with(group)
-      subject.call(group)
+      subject.perform(group)
     end
 
     it "returns the result of calling #realize_proc" do
-      expect(subject.call(group)).to eq(results)
+      expect(subject.perform(group)).to eq(results)
     end
 
   end

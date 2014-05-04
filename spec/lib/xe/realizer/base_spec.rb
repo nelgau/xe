@@ -2,8 +2,10 @@ require 'spec_helper'
 
 describe Xe::Realizer::Base do
 
-  let(:klass) { Class.new(Xe::Realizer::Base) }
-  subject     { klass.new }
+  subject { klass.new(options) }
+
+  let(:klass)   { Class.new(Xe::Realizer::Base) }
+  let(:options) { {} }
 
   describe '.[]' do
 
@@ -21,7 +23,12 @@ describe Xe::Realizer::Base do
     end
 
     it "calls #[] on an instance of Xe::Realizer::Base" do
-      expect(@realizer).to receive(:[]).with(1)
+      expect(@realizer).to receive(:[]).with(1, 2)
+      klass[1, 2]
+    end
+
+    it "accepts a single argument" do
+      expect(@realizer).to receive(:[]).with(1, nil)
       klass[1]
     end
 
@@ -30,8 +37,9 @@ describe Xe::Realizer::Base do
   describe '#[]' do
 
     let(:id)        { 1 }
-    let(:proxy_id)  { 2 }
-    let(:group_key) { 3 }
+    let(:key)       { 2 }
+    let(:proxy_id)  { 3 }
+    let(:group_key) { 4 }
     let(:results)   { {} }
     let(:disabled)  { false }
 
@@ -86,12 +94,33 @@ describe Xe::Realizer::Base do
       end
     end
 
+    context "when a key is provided" do
+      let(:key) { 2 }
+
+      it "defers using that key" do
+        expect(context).to receive(:defer).with(anything, anything, key)
+        subject[1, key]
+      end
+    end
+
+    context "when a key is not provided" do
+      let(:key) { nil }
+
+      it "delegates to #group_key to compute the key" do
+        subject.stub(:group_key).and_return('abc')
+        expect(context).to receive(:defer).with(anything, anything, 'abc')
+        subject[1, key]
+      end
+    end
+
   end
 
-  describe '#call' do
+  describe '#perform' do
+
+    let(:group) { [1, 2, 3] }
 
     it "raises NotImplementedError" do
-      expect { subject.call([]) }.to raise_error(NotImplementedError)
+      expect { subject.perform(group) }.to raise_error(NotImplementedError)
     end
 
   end
@@ -114,6 +143,81 @@ describe Xe::Realizer::Base do
       group1 = subject.new_group(0)
       group2 = subject.new_group(0)
       expect(group1.object_id).to_not eq(group2.object_id)
+    end
+
+  end
+
+  describe '#initialize' do
+
+    it "sets the group_as_array attribute to its default true value" do
+      expect(subject.group_as_array?).to be_true
+    end
+
+    context "when the :group_as_array => false option is passed" do
+      before do
+        options.merge!(:group_as_array => false)
+      end
+
+      it "sets the group_as_array attribute to false" do
+        expect(subject.group_as_array?).to be_false
+      end
+    end
+
+  end
+
+  describe '#group_as_array' do
+
+    it "defaults to true" do
+      expect(subject.group_as_array?).to be_true
+    end
+
+    context "when the @group_as_array instance variable is nil" do
+      before do
+        options.merge!(:group_as_array => nil)
+      end
+
+      it "is true" do
+        expect(subject.instance_variable_get(:@group_as_array)).to be_nil
+        expect(subject.group_as_array?).to be_true
+      end
+    end
+
+  end
+
+  describe '#call' do
+
+    let(:ids)   { [1, 2, 3] }
+    let(:group) { Array.new(ids) }
+
+    it "invokes #perform with the ids" do
+      captured_ids = nil
+      subject.stub(:perform) { |group| captured_ids = group }
+      subject.call(group)
+      expect(captured_ids).to match_array(ids)
+    end
+
+    context "when as_array is true" do
+      before do
+        options.merge!(:group_as_array => true)
+      end
+
+      context "when the group is not an array" do
+        let(:group) { Set.new(ids) }
+
+        it "invokes #perform with the ids" do
+          captured_ids = nil
+          subject.stub(:perform) { |group| captured_ids = group }
+          subject.call(group)
+          expect(captured_ids).to match_array(ids)
+        end
+
+        it "invoke #perform after coercing the group to an array" do
+          captured_ids = nil
+          subject.stub(:perform) { |group| captured_ids = group }
+          subject.call(group)
+          expect(captured_ids).to be_an_instance_of(Array)
+        end
+      end
     end
 
   end

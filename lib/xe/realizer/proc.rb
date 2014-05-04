@@ -7,7 +7,8 @@ module Xe
       # Accepts a block/proc that will be invoked with each group to realize
       # its values as mapping from ids to values. Optionally, you may pass a
       # tag as the first parameter (to be visualized by #inspect).
-      def initialize(tag=nil, &realize_proc)
+      def initialize(tag=nil, options={}, &realize_proc)
+        super(options)
         raise ArgumentError, "No realizer given" unless block_given?
         @tag = tag
         @realize_proc = realize_proc

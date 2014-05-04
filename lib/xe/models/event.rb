@@ -1,7 +1,6 @@
 module Xe
   class Event
     include Enumerable
-    include Comparable
 
     attr_reader :deferrable
     attr_reader :group_key
