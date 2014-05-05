@@ -43,6 +43,6 @@ module Xe
   # Yields a configuration object with which you can control the default
   # behavior of new contexts (e.g., max_fibers).
   def self.configure
-    yield config if block_given?
+    yield(config) if block_given?
   end
 end

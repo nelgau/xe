@@ -101,7 +101,7 @@ module Xe
       def push_stack(fiber)
         current_fiber = Fiber.current
         stack << Frame.new(fiber, current_fiber)
-        result = yield current_fiber
+        result = yield(current_fiber)
         returning_fiber = stack.pop.running_fiber
         raise InconsistentStackError if fiber != returning_fiber
         result
