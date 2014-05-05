@@ -15,6 +15,10 @@ describe Xe::Loom::Base do
       expect(subject.waiters).to_not be_nil
     end
 
+    it "sets the running_fibers attribute" do
+      expect(subject.running_fibers).to_not be_nil
+    end
+
   end
 
   describe '#waiters' do
@@ -25,6 +29,41 @@ describe Xe::Loom::Base do
 
     it "is initially empty" do
       expect(subject.waiters).to be_empty
+    end
+
+  end
+
+  describe '#running_fibers' do
+
+    it "is a set" do
+      expect(subject.running_fibers).to be_an_instance_of(Set)
+    end
+
+    it "is initially empty" do
+      expect(subject.running_fibers).to be_empty
+    end
+
+    it "contains running fibers" do
+      captured_fibers = nil
+      fiber = subject.new_fiber do
+        captured_fibers = subject.running_fibers.to_a
+      end
+      subject.run_fiber(fiber)
+      expect(captured_fibers).to include(fiber)
+    end
+
+    it "doesn't contain fibers which are no longer running" do
+      captured_fibers = nil
+      fiber = subject.new_fiber {}
+      subject.run_fiber(fiber)
+      expect(subject.running_fibers).to_not include(fiber)
+    end
+
+    it "doesn't contain fibers which raised an exception" do
+      captured_fibers = nil
+      fiber = subject.new_fiber { raise }
+      expect { subject.run_fiber(fiber) }.to raise_error
+      expect(subject.running_fibers).to_not include(fiber)
     end
 
   end
