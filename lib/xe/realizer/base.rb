@@ -42,8 +42,9 @@ module Xe
       # Returns a map from ids to values. By default, the realizer group is
       # coerced to an array before invoking. If you wish to preserve the
       # type of the group instance (as returned by the #new_group method), you
-      # can pass `:group_as_array => false` to the constructor or override the
-      # as_array method when subclassing.
+      # can override the #group_as_array method to return false. Finally, if
+      # your realizer subclass doesn't group ids by key, you may define
+      # #perform to take a single argument (the group).
       def perform(group, key)
         raise NotImplementedError
       end
@@ -64,22 +65,18 @@ module Xe
       # Returns true if the realizer should coerce the enumerable group type
       # to an array before invoking the perform method.
       def group_as_array?
-        !@group_as_array.nil? ? @group_as_array : true
-      end
-
-      # Initialize a new realizer instance. You can pass
-      # `:group_as_array => false` as an option to disable to the default
-      # coercion of realization groups to arrays.
-      def initialize(options={})
-        @group_as_array = options.fetch(:group_as_array, true)
+        true
       end
 
       # This method is overriden in subclasses to customize the sematics of the
       # return values from #perform. The default implementation is passthrough.
-      def call(group, key)
+      def call(group, key=nil)
         # Optionally coerce the group enumerable to an array.
         group = group.to_a if group_as_array?
-        perform(group, key)
+        # Support perform methods with both signatures, since not all realizers
+        # require grouping and, in some cases, the argument might be confusing.
+        @perform_arity ||= method(:perform).arity
+        (@perform_arity == 2) ? perform(group, key) : perform(group)
       end
 
       def inspect

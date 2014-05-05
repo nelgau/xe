@@ -3,63 +3,63 @@ require 'spec_helper'
 describe Xe::Realizer::Id do
   include Xe::Test::Mock::Realizer::Id
 
-  subject { klass.new(&id_proc) }
+  subject { klass.new(&value_id) }
 
-  let(:klass)   { Class.new(Xe::Realizer::Id) }
-  let(:value)   { new_value_mock(10) }
-  let(:id_proc) { nil }
+  let(:klass)    { Class.new(Xe::Realizer::Id) }
+  let(:value)    { new_value_mock(10) }
+  let(:value_id) { nil }
 
   describe '.id' do
 
     it "converts a method symbol to a proc that calls it" do
-      id_proc = klass.id(:id2)
-      expect(id_proc.call(value)).to eq(11)
+      value_id = klass.value_id(:id2)
+      expect(value_id.call(value)).to eq(11)
     end
 
     it "accepts an proc that operates on a value" do
-      id_proc = klass.id { |v| v.id }
-      expect(id_proc.call(value)).to eq(10)
+      value_id = klass.value_id { |v| v.id }
+      expect(value_id.call(value)).to eq(10)
     end
 
     it "returns the last value set on it" do
-      klass.id(:id2)
-      id_proc = klass.id
-      expect(id_proc.call(value)).to eq(11)
+      klass.value_id(:id2)
+      value_id = klass.value_id
+      expect(value_id.call(value)).to eq(11)
     end
 
   end
 
-  describe '.default_id_proc' do
+  describe '.default_value_id' do
 
     it "converts a value to an id (using Value#id)" do
-      expect(klass.default_id_proc.call(value)).to eq(10)
+      expect(klass.default_value_id.call(value)).to eq(10)
     end
 
   end
 
   describe '#initialize' do
 
-    context "when no id_proc is given and no id_proc is set on the class" do
-      it "sets the id_proc attribute as the default" do
-        expect(subject.id_proc).to eq(klass.default_id_proc)
+    context "when no value_id is given and no value_id is set on the class" do
+      it "sets the value_id attribute as the default" do
+        expect(subject.value_id).to eq(klass.default_value_id)
       end
     end
 
-    context "when no id_proc is given but one is set on the class" do
+    context "when no value_id is given but one is set on the class" do
       before do
-        klass.id(:id2)
+        klass.value_id(:id2)
       end
 
-      it "sets the id_proc attribute with the one on the class" do
-        expect(subject.id_proc).to eq(klass.id)
+      it "sets the value_id attribute with the one on the class" do
+        expect(subject.value_id).to eq(klass.value_id)
       end
     end
 
-    context "when an id_proc is given directly to the initializer" do
-      let(:id_proc) { Proc.new { |v| v.id2 } }
+    context "when an value_id is given directly to the initializer" do
+      let(:value_id) { Proc.new { |v| v.id2 } }
 
-      it "sets the id_proc attribute with the block" do
-        expect(subject.id_proc).to eq(id_proc)
+      it "sets the value_id attribute with the block" do
+        expect(subject.value_id).to eq(value_id)
       end
     end
 
@@ -78,11 +78,11 @@ describe Xe::Realizer::Id do
 
   describe '#call' do
 
-    let(:group)   { [10, 22, 23] }
-    let(:key)     { 2 }
+    let(:group)    { [10, 22, 23] }
+    let(:key)      { 2 }
 
-    let(:results) { group.map { |id| new_value_mock(id) } }
-    let(:id_proc) { Proc.new { |v| v.id2 } }
+    let(:results)  { group.map { |id| new_value_mock(id) } }
+    let(:value_id) { Proc.new { |v| v.id2 } }
 
     let(:expected) do
       results.each_with_object({}) do |v, rs|

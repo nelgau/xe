@@ -47,6 +47,10 @@ module Xe
         log "#{target}: Releasing #{count} fiber(s)."
       end
 
+      def fiber_free(event)
+        log "#{event}: Reached maximum fiber count. Realizing event."
+      end
+
       def proxy_new(target)
         log "#{target}: Creating proxy."
       end

@@ -8,14 +8,23 @@ module Xe
     # suspended fibers with a given value.
     class Base
       attr_reader :waiters
+      attr_reader :running_fibers
 
       def initialize
         @waiters = {}
+        @running_fibers = Set.new
       end
 
       # Creates a new managed fiber.
       def new_fiber(&blk)
-        Loom::Fiber.new(self, current_depth + 1, &blk)
+        Loom::Fiber.new(self, current_depth + 1) do |*args, &fblk|
+          begin
+            fiber_started
+            blk.call(*args, &fblk)
+          ensure
+            fiber_ended
+          end
+        end
       end
 
       # Transfer control to a managed fiber for the first time.
@@ -59,6 +68,14 @@ module Xe
       # at a depth of one (relative to the root).
       def current_depth
         0
+      end
+
+      def fiber_started
+        @running_fibers << Fiber.current
+      end
+
+      def fiber_ended
+        @running_fibers.delete(Fiber.current)
       end
 
       # @protected

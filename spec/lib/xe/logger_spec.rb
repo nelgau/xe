@@ -76,6 +76,10 @@ describe Xe::Logger do
         subject.call(:fiber_release, target, 1)
       end
 
+      it "handles 'fiber_free'" do
+        subject.call(:fiber_free, event)
+      end
+
       it "handles 'proxy_new'" do
         subject.call(:proxy_new, target)
       end

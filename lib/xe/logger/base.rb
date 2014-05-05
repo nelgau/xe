@@ -18,6 +18,7 @@ module Xe
       def fiber_new; end
       def fiber_wait(target); end
       def fiber_release(target, count); end
+      def fiber_free(event); end
 
       def proxy_new(target); end
       def proxy_resolve(target, count); end

@@ -2,10 +2,9 @@ require 'spec_helper'
 
 describe Xe::Realizer::Base do
 
-  subject { klass.new(options) }
+  subject { klass.new }
 
   let(:klass)   { Class.new(Xe::Realizer::Base) }
-  let(:options) { {} }
 
   describe '.[]' do
 
@@ -148,39 +147,10 @@ describe Xe::Realizer::Base do
 
   end
 
-  describe '#initialize' do
-
-    it "sets the group_as_array attribute to its default true value" do
-      expect(subject.group_as_array?).to be_true
-    end
-
-    context "when the :group_as_array => false option is passed" do
-      before do
-        options.merge!(:group_as_array => false)
-      end
-
-      it "sets the group_as_array attribute to false" do
-        expect(subject.group_as_array?).to be_false
-      end
-    end
-
-  end
-
   describe '#group_as_array' do
 
-    it "defaults to true" do
+    it "is true" do
       expect(subject.group_as_array?).to be_true
-    end
-
-    context "when the @group_as_array instance variable is nil" do
-      before do
-        options.merge!(:group_as_array => nil)
-      end
-
-      it "is true" do
-        expect(subject.instance_variable_get(:@group_as_array)).to be_nil
-        expect(subject.group_as_array?).to be_true
-      end
     end
 
   end
@@ -199,8 +169,9 @@ describe Xe::Realizer::Base do
     end
 
     context "when as_array is true" do
+
       before do
-        options.merge!(:group_as_array => true)
+        subject.stub(:group_as_array?).and_return(true)
       end
 
       context "when the group is not an array" do

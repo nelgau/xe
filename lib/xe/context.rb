@@ -30,6 +30,7 @@ module Xe
       exists? && !current.disabled?
     end
 
+    attr_reader :max_fibers
     attr_reader :policy
     attr_reader :logger
 
@@ -39,10 +40,11 @@ module Xe
     attr_reader :cache
 
     def initialize(options={})
-      @policy = options[:policy] || Policy::Default.new
-      @loom   = options[:loom]   || Loom::Default.new
+      @max_fibers = options[:max_fibers]
       @disabled = options.fetch(:disabled, false)
       @logger = Logger.from_option(options[:logger])
+      @policy = options[:policy] || Policy::Default.new
+      @loom   = options[:loom]   || Loom::Default.new
       @scheduler = Scheduler.new(@policy)
       @proxies = {}
       @cache = {}
@@ -114,11 +116,28 @@ module Xe
 
     # @protected
     def fiber(&blk)
+      # If we can't create a new fiber, run the existing ones.
+      free_fibers unless can_create_fiber?
       log(:fiber_new)
       loom.new_fiber(&blk)
     end
 
     private
+
+    def free_fibers
+      # Realize outstanding deferrals until we can create a fiber or we
+      # exhaust all events in the scheduler.
+      until scheduler.empty?
+        event = scheduler.next_event
+        log(:fiber_free, event)
+        realize_event(event)
+        break if can_create_fiber?
+      end
+      # If we still can't create a new fiber, we've deadlocked.
+      if !can_create_fiber?
+        raise DeadlockError
+      end
+    end
 
     def realize_target(target)
       log(:value_forced, target)
@@ -152,6 +171,10 @@ module Xe
       log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
       return unless target_proxies
       target_proxies.each { |p| p.__set_subject(value) }
+    end
+
+    def can_create_fiber?
+      !max_fibers || loom.running_fibers.count < max_fibers
     end
 
     def log(*args)

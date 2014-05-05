@@ -34,6 +34,7 @@ module Xe
       def new_fiber(&blk)
         super do |parent, *args|
           blk.call(*args)
+          fiber_ended
           # If the fiber that called #run_fiber is not alive, jump up the stack
           # to whichever last transferred control to this one.
           unwind_stack unless parent.alive?

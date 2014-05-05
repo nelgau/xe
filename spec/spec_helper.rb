@@ -1,10 +1,17 @@
 require 'simplecov'
-SimpleCov.start { add_filter 'spec' }
+require 'rspec/instafail'
+require 'colored'
+
+SimpleCov.start do
+  add_filter 'spec'
+end
 
 # Count of randomized iterations to run
-XE_STRESS_LEVEL = 0
-XE_NO_SINGLETON_PROXY = true
+XE_STRESS_LEVEL = 2
 
 require 'xe'
-require 'support/base'
+
+require 'support/module'
 require 'support/mock'
+require 'support/realizer'
+require 'support/enumeration'
