@@ -18,7 +18,7 @@ module Xe
       return {
         :enabled => enabled,
         :max_fibers => max_fibers,
-        :logger => nil
+        :logger => logger
       }
     end
   end
