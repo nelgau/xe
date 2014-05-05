@@ -11,49 +11,8 @@ describe Xe::Policy::Heap do
     Xe::Event.new(deferrable, group_key)
   end
 
-  describe Xe::Policy::Heap::EventData do
-
-    subject     { Xe::Policy::Heap::EventData.new(event, depth) }
-    let(:event) { new_event(0) }
-    let(:depth) { nil }
-
-    describe '#initialize' do
-      it "sets the event" do
-        expect(subject.event).to eq(event)
-      end
-
-      it "sets the min depth to a positive integer" do
-        expect(subject.min_depth).to be > 0
-      end
-    end
-
-    describe '#apply_depth' do
-      let(:depth) { 10 }
-
-      it "decreases min_depth for depths lower than the stored value" do
-        subject.apply_depth(9)
-        expect(subject.min_depth).to eq(9)
-      end
-
-      it "doesn't update min_depth for depths greater than the stored value" do
-        subject.apply_depth(11)
-        expect(subject.min_depth).to eq(10)
-      end
-    end
-
-    describe '#length' do
-      before do
-        5.times { |i| event << i }
-      end
-
-      it "is the count of ids in the event" do
-        expect(subject.length).to eq(5)
-      end
-    end
-
-  end
-
   describe '.default_priority' do
+
     subject { Xe::Policy::Heap.default_priority }
 
     it "is callable" do
@@ -133,6 +92,54 @@ describe Xe::Policy::Heap do
             expect(invoke_call).to eq(0)
           end
         end
+      end
+
+    end
+
+  end
+
+  describe Xe::Policy::Heap::EventData do
+
+    subject     { Xe::Policy::Heap::EventData.new(event, depth) }
+    let(:event) { new_event(0) }
+    let(:depth) { nil }
+
+    describe '#initialize' do
+
+      it "sets the event" do
+        expect(subject.event).to eq(event)
+      end
+
+      it "sets the min depth to a positive integer" do
+        expect(subject.min_depth).to be > 0
+      end
+
+    end
+
+    describe '#apply_depth' do
+
+      let(:depth) { 10 }
+
+      it "decreases min_depth for depths lower than the stored value" do
+        subject.apply_depth(9)
+        expect(subject.min_depth).to eq(9)
+      end
+
+      it "doesn't update min_depth for depths greater than the stored value" do
+        subject.apply_depth(11)
+        expect(subject.min_depth).to eq(10)
+      end
+
+    end
+
+    describe '#length' do
+
+      before do
+        5.times { |i| event << i }
+      end
+
+      it "is the count of ids in the event" do
+        expect(subject.length).to eq(5)
       end
 
     end

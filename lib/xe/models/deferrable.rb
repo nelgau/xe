@@ -2,7 +2,7 @@ module Xe
   class Deferrable
     # Returns a map from ids to values. Any id without a value is assumed to be
     # nil. The argument is an arbitrary object conforming to Enumerable.
-    def call(ids)
+    def call(group)
       {}
     end
 
