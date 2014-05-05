@@ -7,7 +7,7 @@ module Xe
     attr_reader :group
     attr_reader :key
 
-    # Create an event that represents a group of targets similar to that given.
+    # Create an event that represents a group of targets.
     def self.from_target(target)
       deferrable = target.source
       # The target's source must be an instance of deferrable.
@@ -17,12 +17,12 @@ module Xe
       new(deferrable, target.group_key)
     end
 
-    # Returns an event key for the given deferrable group.
+    # Returns the event key for the given deferrable group.
     def self.key(deferrable, group_key)
       [deferrable, group_key]
     end
 
-    # Retruns the event key associated with targets similar to that given.
+    # Retruns the event key for the given target.
     def self.target_key(target)
       key(target.source, target.group_key)
     end
@@ -40,9 +40,8 @@ module Xe
     end
 
     # Realizes all values in the event's group using the deferrable and returns
-    # the results as a hash from ids to values. If a block is given, it
-    # additionally invokes the block once for each id with the target and value.
-    # value represented as a pair.
+    # the result as a hash from ids to values. If a block is given, it invokes
+    # the block once for each id, with the id's target and value.
     def realize(&blk)
       results = deferrable.call(group, group_key)
       each { |t| yield t, results[t.id] } if block_given?
@@ -76,6 +75,7 @@ module Xe
 
     private
 
+    # Returns an enumerator that yields the event's targets.
     def to_enum
       ::Enumerator.new do |y|
         group.each do |id|

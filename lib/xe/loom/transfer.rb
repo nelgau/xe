@@ -5,13 +5,13 @@ module Xe
     # layer of cooperative concurrency. It explicitly transfers control between
     # fibers instead of using resume/yield.
     #
-    # *** NOTE: While this is apparently correct, the implementation segfaults
-    # on Ruby 1.9.3-p448 when an exception is thrown from a fiber into which
-    # control has been transferred.
+    # *** NOTE: While this code is apparently correct, the implementation
+    # segfaults on Ruby 1.9.3-p448 when an exception is thrown from within a
+    # fiber (after execution has been suspended at least once).
     class Transfer < Base
       # Thrown when the current stack and control flow cannot be reconciled.
       # This should never occur under normal circumstances and indicates that
-      # there'ss a serious bug in the implementation of this class.
+      # there's a serious bug in this class.
       class InconsistentStackError < Error; end
 
       Frame  = Struct.new(:running_fiber, :calling_fiber)
@@ -28,9 +28,9 @@ module Xe
       end
 
       # Creates a new managed fiber. As control may transfer from it without
-      # using Fiber.yield, the parent (the ) may have finished executing when
+      # using `Fiber.yield`, the parent may have finished executing when
       # control returns (by releasing). This case is handled by unwinding the
-      # stack on termination and transferring control back to #release.
+      # stack on termination and transferring control back to Loom#release.
       def new_fiber(&blk)
         super do |parent, *args|
           blk.call(*args)
@@ -42,8 +42,8 @@ module Xe
       end
 
       # Transfer control to a managed fiber for the first time. The fiber is
-      # pushed onto the stack and a reference to the current fiber (parent) is
-      # passed to the entry point.
+      # pushed onto the stack and a reference to the current fiber (the parent)
+      # is passed to the entry point.
       def run_fiber(fiber, *args)
         push_stack(fiber) do |parent|
           super(fiber, parent, *args)
@@ -97,7 +97,7 @@ module Xe
       # block. When control returns, the stack frame is popped and the running
       # fiber is compared to the one that was initially pushed. If this
       # implementation's control transfer strategy is consistent, these must be
-      # equal so an exception is raised otherwise.
+      # identical and an exception is raised otherwise.
       def push_stack(fiber)
         current_fiber = Fiber.current
         stack << Frame.new(fiber, current_fiber)
@@ -107,9 +107,9 @@ module Xe
         result
       end
 
-      # Returns control to whichever fiber transferred control to the fiber at
-      # the top of the stack. This method should only ever transfer back to
-      # the #release operation.
+      # Resumes execution of whichever fiber transferred control to the fiber
+      # at the top of the stack. This method should only ever transfer control
+      # back to the Loom#release operation.
       def unwind_stack
         calling_fiber = stack.last.calling_fiber
         raise InconsistentStackError unless calling_fiber

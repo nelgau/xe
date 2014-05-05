@@ -4,8 +4,8 @@ module Xe
     class Error < StandardError; end
 
     # This class is responsible for creating managed fibers, suspending their
-    # execution into keyed groups, and returning control to these groups of
-    # suspended fibers with a given value.
+    # execution into keyed groups, and returning control to these groups by
+    # resuming with a given value.
     class Base
       attr_reader :waiters
       attr_reader :running_fibers
@@ -38,16 +38,17 @@ module Xe
       end
 
       # Suspend the current fiber until the given key is released with a value.
+      # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
       def wait(key, &blk)
         blk.call(key) if block_given?
       end
 
-      # Sequentially return control to all fibers that were suspended by
-      # waiting on the given key. Control is transfered in the order the fibers
-      # began waiting for consistency. The default implementation is empty
-      # because the base class doesn't suspend fibers.
+      # Sequentially return control to all fibers that are waiting on the given
+      # key. Control is transfered in the order the fibers began waiting for
+      # consistency. The default implementation is empty as the base class
+      # can't suspend fibers.
       def release(key, value)
         return
       end
@@ -63,19 +64,10 @@ module Xe
         fibers ? fibers.count : 0
       end
 
-      # Returns the depth of the current fiber as an integer. The default
-      # implementation considers all fibers to be unnested and therefore
-      # at a depth of one (relative to the root).
+      # Returns the depth of the current fiber. The default implementation
+      # considers all fibers to be unnested and therefore at a depth of zero.
       def current_depth
         0
-      end
-
-      def fiber_started
-        @running_fibers << Fiber.current
-      end
-
-      def fiber_ended
-        @running_fibers.delete(Fiber.current)
       end
 
       # @protected
@@ -93,6 +85,18 @@ module Xe
         key_waiters = waiters.delete(key)
         return unless key_waiters
         key_waiters.each(&blk)
+      end
+
+      # @protected
+      # Adds the current fiber to the running set.
+      def fiber_started
+        @running_fibers << Fiber.current
+      end
+
+      # @protected
+      # Removes the current fiber from the running set.
+      def fiber_ended
+        @running_fibers.delete(Fiber.current)
       end
     end
   end

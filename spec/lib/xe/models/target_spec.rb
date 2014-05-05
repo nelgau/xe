@@ -40,4 +40,18 @@ describe Xe::Target do
 
   end
 
+  describe '(immutability)' do
+
+    it "doesn't respond to the #[]= method" do
+      expect { subject[:key] = 1 }.to raise_error(NoMethodError)
+    end
+
+    it "doesn't respond to attribute writer methods" do
+      subject.members.each do |member|
+        expect { subject.send("member=", 1) }.to raise_error(NoMethodError)
+      end
+    end
+
+  end
+
 end

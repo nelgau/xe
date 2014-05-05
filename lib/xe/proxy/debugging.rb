@@ -4,7 +4,7 @@ module Xe
   class Proxy < BasicObject
     module Debugging
       class << self
-        # This is the logger to which debugging information is written.
+        # The logger instance to which debug output is written.
         attr_accessor :logger
       end
 
@@ -13,7 +13,8 @@ module Xe
         :object_id,
         :__send__,
         :__id__,
-        # Tracing the method will cause an infinite regress.
+        # Tracing this method will cause an infinite regress. There's a
+        # solution of course, but it's not worth the effort and complexity.
         :__xe_proxy?
       ]
 

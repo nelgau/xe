@@ -12,6 +12,7 @@ module Xe
         super(&blk)
       end
 
+      # Transfers control into the fiber for the first time.
       def run(*args)
         loom.run_fiber(self, *args)
       end

@@ -10,15 +10,15 @@ module Xe
         @value_id = new_proc || @value_id
       end
 
-      # The default id derivation proc that simply calls #id on the value.
+      # The default id derivation proc simply calls #id on the value.
       def self.default_value_id
         @@default_value_id ||= ::Proc.new { |v| v.id }
       end
 
       # Accepts a proc that transforms realized values back into their
       # associated ids. If no block is given, it falls back to the class-level
-      # 'id' attribute. Finally, if that hasn't been defined, the default proc
-      # that derives the id from the #id method will be used.
+      # 'id' attribute. If the class-level attribute hasn't been specified,
+      # the default proc will be used (see Id.default_value_id).
       def initialize(&id_proc)
         @value_id = id_proc ||
           self.class.value_id ||
@@ -27,15 +27,13 @@ module Xe
 
       # Override this method to provide a batch loader.
       # Returns an enumerable of loaded values. These values are required to
-      # identify using the proc passed to the initializer. The group argument
-      # may be of the type returned by the #new_group method, or it may be an
-      # arbitrary object instance that conforms to the enumerable interface.
+      # identify using the proc passed to the initializer (or equivalent).
       def perform(group, key)
         raise NotImplementedError
       end
 
-      # Calls perform and returns a hash from derived identifiers (as keys) to
-      # realized values. Derivation uses the #id_proc attribute.
+      # Calls perform and returns a hash from derived identifiers to realized
+      # values. Derivation uses the #id_proc attribute.
       def call(group, key)
         super.each_with_object({}) do |v, rs|
           rs[@value_id.call(v)] = v

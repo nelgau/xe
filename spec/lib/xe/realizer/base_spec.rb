@@ -40,11 +40,11 @@ describe Xe::Realizer::Base do
     let(:proxy_id)  { 3 }
     let(:group_key) { 4 }
     let(:results)   { {} }
-    let(:disabled)  { false }
+    let(:enabled)   { true }
 
     let(:context) do
       double(Xe::Context).tap do |context|
-        context.stub(:disabled?) { disabled }
+        context.stub(:enabled?) { enabled }
         context.stub(:defer)
       end
     end
@@ -66,8 +66,8 @@ describe Xe::Realizer::Base do
       subject[1]
     end
 
-    context "when the context is not disabled" do
-      let(:disabled) { false }
+    context "when the context is enabled" do
+      let(:enabled) { true }
 
       it "calls defer on the current context" do
         expect(context).to receive(:defer).with(subject, proxy_id, group_key)
@@ -76,8 +76,8 @@ describe Xe::Realizer::Base do
     end
 
     context "when the context is disabled" do
-      let(:disabled) { true }
-      let(:results)  { { proxy_id => 10 } }
+      let(:enabled) { false }
+      let(:results) { { proxy_id => 10 } }
 
       it "invokes the #call/#perform methods directly" do
         expect(subject[1]).to eq(10)

@@ -1,6 +1,8 @@
 require 'support/realizer/type_int_to_str'
 require 'support/realizer/type_str_to_int'
+require 'support/realizer/increment'
 require 'support/realizer/multiply'
+require 'support/realizer/concatenate'
 
 module Xe::Test
   module Realizer
@@ -12,8 +14,9 @@ module Xe::Test
       @all ||= [
         TypeIntToStr.new,
         TypeStrToInt.new,
+        Increment.new(1),
         Multiply.new(2),
-        Multiply.new(4)
+        Concatenate.new('1')
       ]
     end
   end

@@ -323,6 +323,10 @@ describe Xe::Heap do
         end
       end
 
+      it "returns the value for the given key" do
+        expect(subject.delete('f')).to eq(5)
+      end
+
       it "removes the item with the given key" do
         subject.delete('f')
         expect(subject['f']).to be_nil

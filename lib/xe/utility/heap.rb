@@ -17,7 +17,7 @@ module Xe
 
     # Calls blk once for each item in the heap, passing that element as a
     # parameter. If no block is given, an enumerator is returned instead. The
-    # first item is guaranteed to compare highest relative to the comparator
+    # first item is guaranteed to compare highest relative to the comparator,
     # but all other items are returned in no particular order.
     def each(&blk)
       to_enum.each(&blk)
@@ -45,7 +45,7 @@ module Xe
       !!@indexes[key]
     end
 
-    # Assigns a vlaue for the given key, or replaces an existing one.
+    # Assigns a value for the given key, or replaces an existing one.
     def []=(key, value)
       push(key, value)
     end
@@ -61,36 +61,36 @@ module Xe
       end
     end
 
-    # Removes the item for a given key and returns the key and value as a pair.
-    # If there is no item with the given key, it returns nil.
+    # Removes the item for a given key and returns the value. If there is no
+    # item with the given key, it returns nil.
     def delete(key)
       index = @indexes[key]
       return unless index
-      remove(index).to_a
+      remove(index).value
     end
 
-    # Re-sort the item with the given key.
+    # Reheap the item with the given key.
     def update(key)
       index = @indexes[key]
       sift(index) if index
     end
 
-    # Returns the item that compares highest relative to the comparator as a
-    # pair, or nil if the heap is empty. The heap is not mutated.
+    # Returns the item that compares highest relative to the comparator (as a
+    # pair), or nil if the heap is empty. The heap is not mutated.
     def peek
       return if @nodes.empty?
       @nodes[0].to_a
     end
 
     # Removes and returns the item that compares highest relative to the
-    # comparator as a pair, or nil if the heap is empty. The heap is mutated.
+    # comparator (as a pair), or nil if the heap is empty. The heap is mutated.
     def pop
       return if @nodes.empty?
       remove(0).to_a
     end
 
-    # Removes and returns all items as pairs in sorted order relative to the
-    # comparator. The heap is mutated and empty after this operation.
+    # Removes and returns all items (as pairs) in sorted order relative to the
+    # comparator. The heap is mutated and is empty after this operation.
     def pop_all
       result = []
       until @nodes.empty?

@@ -4,23 +4,25 @@ describe Xe::Logger do
 
   subject { Xe::Logger }
 
-  describe '.from_option' do
+  describe '.from_options' do
+
+    let(:options) { {:logger => logger} }
+    let(:logger)  { nil }
 
     context "when option is ':stdout'" do
-      let(:option) { :stdout }
+      let(:logger) { :stdout }
 
       it "returns an instance of Xe::Logger::Text" do
-        result = subject.from_option(option)
+        result = subject.from_options(options)
         expect(result).to be_an_instance_of(Xe::Logger::Text)
       end
     end
 
     context "when option is a logger instance" do
       let(:logger) { Xe::Logger::Base.new }
-      let(:option) { logger }
 
       it "returns the logger instance" do
-        result = subject.from_option(option)
+        result = subject.from_options(options)
         expect(result).to eq(logger)
       end
     end

@@ -7,7 +7,7 @@ describe "Xe - Randomized Enumeration Topology" do
   } }
 
   def self.depths
-    [1, 2, 4, 6]
+    [1, 2, 4, 8]
   end
 
   class DistinctValuesError < StandardError

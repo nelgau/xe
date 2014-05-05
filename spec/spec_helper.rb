@@ -7,7 +7,7 @@ SimpleCov.start do
 end
 
 # Count of randomized iterations to run
-XE_STRESS_LEVEL = 2
+XE_STRESS_LEVEL = 1
 
 require 'xe'
 

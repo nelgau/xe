@@ -1,8 +1,7 @@
 module Xe
   class Deferrable
-    # Returns a map from ids to values. Any id without a realized value is
-    # assumed to be nil. The first argument may be an arbitrary object instance
-    # conforming to Enumerable.
+    # Returns a map from ids to values. Any id without a value is assumed to be
+    # nil. The argument is an arbitrary object conforming to Enumerable.
     def call(ids)
       {}
     end
@@ -12,7 +11,8 @@ module Xe
       nil
     end
 
-    # Returns a new enumerable than responds to :<<.
+    # Returns a new enumerable collection than responds to :<<. Deferred values
+    # will be aggregated into these collections by group key.
     def new_group(key)
       []
     end

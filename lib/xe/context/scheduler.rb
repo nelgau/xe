@@ -10,7 +10,7 @@ module Xe
       end
 
       # Adds a target to the queue of realizations, creating an event for it
-      # if one doesn't exist. It notifies the policy of the change.
+      # if one doesn't already exist. It notifies the policy of the change.
       def add_target(target)
         key = Event.target_key(target)
         event = events[key]
@@ -27,28 +27,28 @@ module Xe
         end
       end
 
-      # Notifies the policy that a fiber has blocked on the realization of the
-      # given target at a particular depth.
+      # Notifies the policy that a fiber is waiting on the realization of the
+      # given target (at a particular depth).
       def wait_target(target, depth)
         key = Event.target_key(target)
         event = events[key]
         policy.wait_event(event, depth) if event
       end
 
-      # Returns and removes an event from the queue of realizations, or nil
-      # if the queue is empty.
+      # Removes and returns an event from the queue of realizations, in the
+      # order specified by the policy, or nil if the queue is empty.
       def next_event
-        # Give the policy the oportunity to select the event. If the policy
-        # defers the decision (by returning nil), select the first event in the
-        # hash. Thanks to Ruby's ordered hashes this will also have the
-        # property of consuming the events in the order they were added.
+        # Allow the policy the first oportunity to select the event. If the
+        # policy defers the decision (by returning nil), select the first event
+        # in the hash. Thanks to Ruby's ordered hashes, this has the property
+        # of consuming the events in the order that they were added.
         key   = policy.next_event_key
         key ||= events.each_key.first
         consume_event(key)
       end
 
-      # Pops and returns the event associated with this target, or returns nil
-      # if no such event exists.
+      # Removes and returns the event associated with this target, or nil if
+      # no such event exists.
       def pop_event(target)
         key = Event.target_key(target)
         consume_event(key)
@@ -61,6 +61,8 @@ module Xe
 
       private
 
+      # Removes and returns the event with the given key. It also notifies the
+      # policy that the event was removed.
       def consume_event(key)
         events.delete(key).tap do |event|
           policy.remove_event(event) if event

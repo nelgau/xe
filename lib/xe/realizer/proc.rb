@@ -4,9 +4,9 @@ module Xe
       attr_reader :tag
       attr_reader :realize_proc
 
-      # Accepts a block/proc that will be invoked with each group to realize
-      # its values as mapping from ids to values. Optionally, you may pass a
-      # tag as the first parameter (to be visualized by #inspect).
+      # Accepts a block/proc that will be invoked a group to realize its values
+       #as mapping from ids to values. Optionally, you can pass a tag as the
+       # first parameter (visualized by #inspect).
       def initialize(tag=nil, &realize_proc)
         raise ArgumentError, "No realizer given" unless block_given?
         @tag = tag

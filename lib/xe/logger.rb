@@ -6,14 +6,16 @@ require 'xe/logger/event'
 
 module Xe
   module Logger
-    def self.from_option(option)
-      case option
+    # Returns a Xe:Logger::Base instance from a context options hash.
+    def self.from_options(options)
+      logger = options[:logger]
+      case logger
       when :stdout
         Logger::Text.new
-      when Logger
-        Logger::Text.new(:logger => option)
+      when ::Logger
+        Logger::Text.new(:logger => logger)
       else
-        option
+        logger
       end
     end
   end

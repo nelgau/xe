@@ -27,7 +27,7 @@ module Xe
         def run(index=nil, &blk)
           # If the context is disabled, return the evaluated block without
           # deferring, proxying or any fiber-based enumeration.
-          return blk.call if context.disabled?
+          return blk.call if !context.enabled?
 
           # Create a new target for this component of the enumeration.
           target = Target.new(self, index)

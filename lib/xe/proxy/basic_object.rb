@@ -1,9 +1,9 @@
 module Xe
   class Proxy < BasicObject
     module BasicObject
-      # These methods are defined by on the BasicObject class. Consequently,
-      # they won't be delegated automatically by #method_missing and need
-      # special handling to ensure that they will be invoked on the value.
+      # These methods are defined on the BasicObject class. Consequently, they
+      # aren't delegated by #method_missing and need special handling to ensure
+      # that they will be correctly invoked on the value.
 
       def !
         !__resolve_value
@@ -29,7 +29,7 @@ module Xe
         __resolve_value.instance_eval(*args, &blk)
       end
 
-      # Not overridden by convention. This method is reserved for the real
+      # Not overridden by convention. These methods are reserved for the real
       # identifier of an object, computed from its pointer in memory. No two
       # active objects should ever return the same value.
       # def object_id
@@ -37,7 +37,7 @@ module Xe
 
       # Not overridden by convention. In Ruby, `equals? is implemented by
       # simple pointer comparison, should be reserved for strict object-level
-      # identity, and never overriden by subclasses.
+      # identity and never overriden by subclasses.
       # def equals?(other)
 
       # These are unsupported to let `rspec-mocks` work its magic.
