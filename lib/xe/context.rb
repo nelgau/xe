@@ -5,14 +5,16 @@ module Xe
   class Context
     extend Current
 
-    def self.wrap(options={}, &blk)
+    # Create a context and yield it to the block. If a context already exists
+    # for this thread, no context is created and that one is yielded instead.
+    def self.wrap(options={})
       return unless block_given?
       # If we already have a context, yield it.
       return yield current if current
       # Otherwise, create a new context.
       begin
         self.current = new(options)
-        result = blk.call(current)
+        result = yield current
         current.finalize
         result
       ensure
@@ -38,11 +40,10 @@ module Xe
 
     def initialize(options={})
       @policy = options[:policy] || Policy::Default.new
-      @logger = Logger.from_option(options[:logger])
+      @loom   = options[:loom]   || Loom::Default.new
       @disabled = options.fetch(:disabled, false)
-
+      @logger = Logger.from_option(options[:logger])
       @scheduler = Scheduler.new(@policy)
-      @loom = Loom::Default.new
       @proxies = {}
       @cache = {}
     end

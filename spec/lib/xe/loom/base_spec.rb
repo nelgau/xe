@@ -34,7 +34,7 @@ describe Xe::Loom::Base do
     let(:fiber) { subject.new_fiber(&proc) }
 
     it "returns a new instance of Xe::Fiber" do
-      expect(fiber).to be_an_instance_of(Xe::Fiber)
+      expect(fiber).to be_an_instance_of(Xe::Loom::Fiber)
     end
 
     it "returns a fiber associated to the loom" do

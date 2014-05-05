@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-describe Xe::Fiber do
+describe Xe::Loom::Fiber do
 
-  subject { Xe::Fiber.new(loom, depth, &proc) }
+  subject { Xe::Loom::Fiber.new(loom, depth, &proc) }
 
   let(:loom)  { Xe::Loom::Default.new }
   let(:depth) { 0 }

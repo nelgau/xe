@@ -15,7 +15,7 @@ module Xe
 
       # Creates a new managed fiber.
       def new_fiber(&blk)
-        Xe::Fiber.new(self, current_depth + 1, &blk)
+        Loom::Fiber.new(self, current_depth + 1, &blk)
       end
 
       # Transfer control to a managed fiber for the first time.
@@ -25,7 +25,7 @@ module Xe
 
       # Returns true if the fiber is managed.
       def managed_fiber?(fiber)
-        fiber.is_a?(Xe::Fiber)
+        fiber.is_a?(Loom::Fiber)
       end
 
       # Suspend the current fiber until the given key is released with a value.

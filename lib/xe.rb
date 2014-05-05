@@ -1,10 +1,9 @@
 require 'xe/version'
 require 'xe/errors'
-
 require 'xe/utility'
 require 'xe/logger'
-
 require 'xe/proxy'
+require 'xe/loom'
 require 'xe/models'
 require 'xe/context'
 require 'xe/policy'
@@ -28,9 +27,9 @@ module Xe
 
   # Execute a map operation over a collection using the Xe map enumerator.
   # If no context already exists, the operation is wrapped in one.
-  def self.map(enumerable, options={}, &b)
+  def self.map(enumerable, options={}, &blk)
     context do |c|
-      c.enum(enumerable, options).map(&b)
+      c.enum(enumerable, options).map(&blk)
     end
   end
 end
