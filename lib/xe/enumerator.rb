@@ -20,18 +20,6 @@ module Xe
       @options = options
     end
 
-    # Returns the wrapped collection. This can be useful to 'break out' of a
-    # chain of deferring enumerators to use the standard methods defined in
-    # the enumerable interface.
-    def value
-      @enumerable
-    end
-
-    # Returns the wrapped collection as an array.
-    def to_a
-      @enumerable.to_a
-    end
-
     def inspect
       contents = enumerable.is_a?(Enumerator) ? "(nested)" : enumerable.inspect
       "#<#{self.class.name} #{contents}>"
