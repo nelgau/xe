@@ -38,6 +38,7 @@ module Xe
             result = blk.call
             context.dispatch(target, result)
           end
+
           # The fiber terminated. Return the result as a value.
           return result if !fiber.alive?
 
