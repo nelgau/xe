@@ -18,6 +18,7 @@ module Xe
         current.finalize
         result
       ensure
+        current.invalidate!
         clear_current
       end
     end
@@ -65,6 +66,7 @@ module Xe
       @scheduler = Scheduler.new(policy)
       @proxies = {}
       @cache = {}
+      @valid = true
     end
 
     # Returns a deferrable-aware enumerator for the given collection. This
@@ -92,9 +94,19 @@ module Xe
       end
     end
 
-    # A disabled context will realize values immediately.
+    # Returns true when the context allows deferring values.
     def enabled?
       !!@enabled
+    end
+
+    # Returns true when the context will no longer accept new deferrals.
+    def valid?
+      @valid
+    end
+
+    # After calling this method, the context will refuse to defer values.
+    def invalidate!
+      @valid = false
     end
 
     # @protected
@@ -105,8 +117,9 @@ module Xe
     def defer(deferrable, id, group_key=nil)
       # Explicitly disallow deferred realization on disabled contexts. This
       # case should be handled internally by the realizer base class.
-      raise DeferError if !enabled?
-      raise DeferError if !deferrable.is_a?(Deferrable)
+      raise DeferError, "Context is disabled"  if !enabled?
+      raise DeferError, "Context is invalid"   if !valid?
+      raise DeferError, "Value not deferrable" if !deferrable.is_a?(Deferrable)
 
       target = Target.new(deferrable, id, group_key)
       # If this target was cached in a previous realization, return that value.
@@ -126,7 +139,8 @@ module Xe
 
     # @protected
     # Communicate a target's value to its proxies and resume any fibers that
-    # are waiting on its realization.
+    # are waiting on realization. Because targets don't contain unrealized
+    # values, this will NEVER suspend the current fiber.
     def dispatch(target, value)
       log(:value_dispatched, target)
       resolve(target, value)
@@ -212,7 +226,7 @@ module Xe
     def wait(target, &blk)
       log(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, &blk)
+      loom.wait(target, self, &blk)
     end
 
     # @protected
@@ -238,6 +252,18 @@ module Xe
     # Log an event to the context's logger.
     def log(*args)
       @logger.call(*args) if @logger
+    end
+
+    def inspect
+      "#<#{self.class.name} " \
+        "fibers: #{loom.running_fibers.length} " \
+        "queued: #{scheduler.events.length} " \
+        "proxies: #{proxies.length} " \
+        "cached: #{cache.length}>"
+    end
+
+    def to_s
+      inspect
     end
   end
 end

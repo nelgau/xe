@@ -32,12 +32,23 @@ module Xe
     Realizer.new(tag, &realize_proc)
   end
 
-  # Execute a map operation over a collection using a deferrable-aware mapping
-  # enumerator. If no context exists, the operation is wrapped in one.
-  def self.map(enumerable, options={}, &blk)
-    context(options) do |c|
-      c.enum(enumerable, options).map(&blk)
-    end
+  # Execute an `each` operation over a collection using a deferring enumerator.
+  # If no current context exists, the operation is wrapped.
+  def self.each(e, options={}, &blk)
+    context(options) { |c| c.enum(e, options).each(&blk) }
+  end
+
+  # Execute a `map` operation over a collection using a deferring enumerator.
+  # If no current context exists, the operation is wrapped.
+  def self.map(e, options={}, &blk)
+    context(options) { |c| c.enum(e, options).map(&blk) }
+  end
+
+  # Returns a generic deferring enumerator for a collection. If no current
+  # context exists, this method raises a NoContextException.
+  def self.enum(e, options)
+    raise NoContextError unless Context.exists?
+    Context.current.enum(e, options)
   end
 
   # Yields a configuration object with which you can control the default

@@ -41,8 +41,8 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key, &blk)
-        blk.call(key) if block_given?
+      def wait(key, *args, &blk)
+        blk.call(key, *args) if block_given?
       end
 
       # Sequentially return control to all fibers that are waiting on the given

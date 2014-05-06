@@ -9,7 +9,7 @@ module Xe
     class Yield < Base
       # Yields from the current managed fiber and returns the result on resume.
       # If no managed fiber is available, it returns the value of the block.
-      def wait(key, &blk)
+      def wait(key, *args, &blk)
         current = Fiber.current
         # If the current fiber isn't managed, we can't wait because we have
         # no assurances that it will behave as needed to correctly resolve all

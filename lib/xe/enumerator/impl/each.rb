@@ -3,9 +3,7 @@ module Xe
     module Impl
       class Each < Base
         def each(&blk)
-          map_with_index do |obj, index|
-            run(index) { blk.call(obj); obj }
-          end
+          run_map { blk.call(obj); obj }
         end
       end
     end
