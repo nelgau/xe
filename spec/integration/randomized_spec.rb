@@ -3,7 +3,7 @@ require 'spec_helper'
 describe "Xe - Randomized Enumeration Topology" do
 
   let(:options) { {
-    :max_fibers => 10
+    :max_fibers => 20
   } }
 
   def self.depths

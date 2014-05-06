@@ -46,7 +46,7 @@ module Xe
 
   # Returns a generic deferring enumerator for a collection. If no current
   # context exists, this method raises a NoContextException.
-  def self.enum(e, options)
+  def self.enum(e, options={})
     raise NoContextError unless Context.exists?
     Context.current.enum(e, options)
   end

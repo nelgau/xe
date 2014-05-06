@@ -48,13 +48,37 @@ describe Xe do
 
   end
 
+  describe '.each' do
+
+    let(:ids)      { [1, 2, 3, 4] }
+    let(:realizer) { invoke_realizer }
+
+    it "returns the enumerated collection" do
+      result = subject.each(ids) { |i| i + 1 }
+      expect(result).to eq(ids)
+    end
+
+    it "invokes the block for each" do
+      sum = 0
+      subject.each(ids) { |i| sum += i }
+      expect(sum).to eq(10)
+    end
+
+    it "invokes the block for each while deferring values" do
+      sum = 0
+      subject.each(ids) { |i| r = realizer[i].to_i; sum += r }
+      expect(sum).to eq(20)
+    end
+
+  end
+
   describe '.map' do
 
     let(:ids)      { [1, 2, 3, 4] }
     let(:output)   { [2, 4, 6, 8] }
     let(:realizer) { invoke_realizer }
 
-    it "maps over an enumeable" do
+    it "maps over an enumerable" do
       result = subject.map(ids, &mapping_proc)
       expect(result).to eq(output)
     end
@@ -72,6 +96,42 @@ describe Xe do
         result2 = subject.map(result1) { |i| realizer[i] }
         expect(result2).to eq(output)
       end
+    end
+
+  end
+
+  describe '.enum' do
+
+    let(:ids)    { [1, 2, 3] }
+
+    context "when a context exists" do
+      around do |example|
+        Xe.context { example.run }
+      end
+
+      it "returns an instance of Xe:Enumerator" do
+        expect(Xe.enum(ids)).to be_an_instance_of(Xe::Enumerator)
+      end
+
+      it "enumerates" do
+        expect(Xe.enum(ids).first).to eq(1)
+      end
+    end
+
+    context "when there is no context" do
+      it "raises Xe::NoContextError" do
+        expect { Xe.enum(ids) }.to raise_error(Xe::NoContextError)
+      end
+    end
+
+  end
+
+  describe '.configure' do
+
+    it "yields an instance of the configuration object" do
+      captured_config = nil
+      Xe.configure { |c| captured_config = c }
+      expect(captured_config).to be_an_instance_of(Xe::Configuration)
     end
 
   end

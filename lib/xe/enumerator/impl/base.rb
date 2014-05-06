@@ -46,8 +46,9 @@ module Xe
 
         # Run a computation (returning a single value) within a new managed
         # fiber. If the result blocks on a deferred realization, a proxy for
-        # the value is returned instead.
+        # the value is returned instead. Must be called with a block.
         def run_value(&blk)
+          raise ArgumentError, "No block given" unless block_given?
           # When serializing, immediately evaluate the block and return.
           return blk.call if !concurrent?
 
@@ -101,9 +102,10 @@ module Xe
         end
 
         # Run an enumeration (returning an array of independent values) within
-        # managed fibers. If some item in the collection blocks on a deferred
-        # realization, a proxy is substituted of the result.
+        # managed fibers. If some item in the collection blocks on realization,
+        # a proxy is substituted for the result. Must be called with a block.
         def run_map(&blk)
+          raise ArgumentError, "No block given" unless block_given?
           results = []
           consumer = ::Enumerator.new(enum)
           # Iteratively create fibers until we exhaust the consumer.

@@ -1,8 +1,7 @@
 require 'xe/enumerator/impl/delegators'
 require 'xe/enumerator/impl/base'
 require 'xe/enumerator/impl/general'
-require 'xe/enumerator/impl/each'
-require 'xe/enumerator/impl/map'
+require 'xe/enumerator/impl/mappable'
 
 module Xe
   class Enumerator
@@ -14,12 +13,17 @@ module Xe
 
       # Returns the implementation class for the given enumerable method.
       def self.class_for_method(method)
-        case method
-        when :each then Impl::Each
-        when :map  then Impl::Map
-        else            Impl::General
-        end
+        IMPL_CLASSES[method] || Impl::General
       end
+
+      # This is a map from Enumerable methods to the class that implements
+      # them. We need distinct classes so that we may replace the #each method
+      # from the perspective of consumers of the Xe::Enumerator class but
+      # allow for a trivial implementation otherwise.
+      IMPL_CLASSES = {
+        :each => Impl::Mappable,
+        :map  => Impl::Mappable
+      }
     end
   end
 end
