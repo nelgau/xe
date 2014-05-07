@@ -59,6 +59,16 @@ module Xe
         events.empty?
       end
 
+      def inspect
+        "#<#{self.class.name}: " \
+        "policy: '#{policy.class.name}' " \
+        "events: #{events.length}>"
+      end
+
+      def to_s
+        inspect
+      end
+
       private
 
       # Removes and returns the event with the given key. It also notifies the

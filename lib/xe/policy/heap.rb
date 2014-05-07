@@ -89,6 +89,12 @@ module Xe
         key
       end
 
+      def inspect
+        "#<#{self.class.name}: " \
+        "queue: #{queue.length} " \
+        "updated_key: #{updated_keys.length}>"
+      end
+
       private
 
       # Reheap all updated events.

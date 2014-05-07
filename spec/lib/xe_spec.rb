@@ -24,9 +24,9 @@ describe Xe do
 
   describe '.context' do
 
-    it "yields a context" do
+    it "yields to a block with a context" do
       captured_context = nil
-      subject.context { |c| captured_context = c }
+      subject.context { captured_context = Xe::Context.current }
       expect(captured_context).to be_an_instance_of(Xe::Context)
     end
 

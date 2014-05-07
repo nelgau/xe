@@ -10,7 +10,7 @@ module Xe
         # enumeration implementation and invokes the operation.
         DELEGATED_METHODS.each do |m|
           define_method(m) do |*args, &blk|
-            impl = Impl.new(m, context, enumerable, options)
+            impl = Impl.new(m, enumerable, options)
             result = impl.send(m, *args, &blk)
             # Drop references to external objects.
             impl.invalidate!

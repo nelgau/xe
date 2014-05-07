@@ -7,14 +7,14 @@ module Xe
 
     # Conditionally create a context and yield it to the block. If a context
     # already exists for this thread, the existing one is yielded instead.
-    def self.wrap(options={})
+    def self.wrap(options={}, &blk)
       return unless block_given?
-      # If we already have a context, yield it.
-      return yield(current) if current
+      # If we already have a context, just yield.
+      return blk.call if current
       # Otherwise, create a new context.
       begin
         self.current = new(options)
-        result = yield(current)
+        result = blk.call
         current.finalize
         result
       ensure
@@ -72,7 +72,7 @@ module Xe
     # Returns a deferrable-aware enumerator for the given collection. This
     # instance conforms to the Enumerable interface.
     def enum(enumerable, options={})
-      Enumerator.new(self, enumerable, options)
+      Enumerator.new(enumerable, options)
     end
 
     # Iteratively realize all outstanding deferred values, event by event,
@@ -164,11 +164,26 @@ module Xe
     # Returns a new fiber that will start execution in the given block. If
     # creating it would exceed the maximum count allowed in the context's
     # config, we will realize deferred values until a fiber becomes available.
-    def fiber(&blk)
+    def new_fiber(&blk)
       # If we can't create a new fiber, run the existing ones.
       free_fibers unless can_run_fiber?
       log(:fiber_new)
       loom.new_fiber(&blk)
+    end
+
+    # @protected
+    def run_fiber(fiber, *args)
+      loom.run_fiber(fiber, *args)
+    end
+
+    # @protected
+    def fiber_started(fiber)
+      loom.fiber_started(fiber)
+    end
+
+    # @protected
+    def fiber_finished(fiber)
+      loom.fiber_finished(fiber)
     end
 
     # @protected
@@ -194,7 +209,7 @@ module Xe
     # @protected
     # Returns true if starting a new fiber would exceed the maximum.
     def can_run_fiber?
-      !max_fibers || loom.running_fibers.count < max_fibers
+      !max_fibers || loom.running.count < max_fibers
     end
 
     # @protected
@@ -226,7 +241,7 @@ module Xe
     def wait(target, &blk)
       log(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, self, &blk)
+      loom.wait(target, &blk)
     end
 
     # @protected
@@ -255,8 +270,8 @@ module Xe
     end
 
     def inspect
-      "#<#{self.class.name} " \
-        "fibers: #{loom.running_fibers.length} " \
+      "#<#{self.class.name}: " \
+        "fibers: #{loom.running.length} " \
         "queued: #{scheduler.events.length} " \
         "proxies: #{proxies.length} " \
         "cached: #{cache.length}>"

@@ -15,21 +15,15 @@ describe Xe::Context::Current do
       expect(subject.all_contexts).to be_an_instance_of(Hash)
     end
 
-    it "contains a wrapping context" do
-      Xe::Context.wrap do |context|
-        expect(subject.all_contexts.values).to include(context)
-      end
-    end
-
     it "contains the current context" do
-      Xe::Context.wrap do |context|
+      Xe::Context.wrap do
         expect(subject.all_contexts.values).to include(subject.current)
       end
     end
 
     it "doesn't contain contexts which aren't current" do
       captured_context = nil
-      Xe::Context.wrap { |context| captured_context = context }
+      Xe::Context.wrap { captured_context = Xe::Context.current }
       expect(subject.all_contexts.values).to_not include(captured_context)
     end
 
@@ -37,9 +31,17 @@ describe Xe::Context::Current do
 
   describe '.current' do
 
-    it "is the current context" do
-      Xe::Context.wrap do |context|
-        expect(subject.current).to eq(context)
+    context "when wrapped" do
+      it "is a context" do
+        Xe::Context.wrap do
+          expect(subject.current).to be_an_instance_of(Xe::Context)
+        end
+      end
+    end
+
+    context "when not wrapped" do
+      it "is nil" do
+        expect(subject.current).to be_nil
       end
     end
 

@@ -22,6 +22,14 @@ module Xe
       def next_event_key
         nil
       end
+
+      def inspect
+        "#<#{self.class.name}>"
+      end
+
+      def to_s
+        inspect
+      end
     end
   end
 end

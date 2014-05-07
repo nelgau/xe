@@ -52,7 +52,7 @@ module Xe
 
       # Yields from the current fiber and returns the result on resume.
       # If no managed fiber is available, it returns the value of the block.
-      def wait(key, *args, &blk)
+      def wait(key, &blk)
         # We're at the root. We can't wait.
         return super if stack.count < 2
         # How can these be different? The client of an enumeration operation

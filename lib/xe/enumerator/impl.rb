@@ -1,3 +1,4 @@
+require 'xe/enumerator/impl/fibers'
 require 'xe/enumerator/impl/delegators'
 require 'xe/enumerator/impl/base'
 require 'xe/enumerator/impl/general'
@@ -7,8 +8,8 @@ module Xe
   class Enumerator
     module Impl
       # Returns a new enumeration implementation parameterized by method.
-      def self.new(method, context, enumerable, options)
-        class_for_method(method).new(context, enumerable, options)
+      def self.new(method, enumerable, options)
+        class_for_method(method).new(enumerable, options)
       end
 
       # Returns the implementation class for the given enumerable method.

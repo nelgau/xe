@@ -8,28 +8,20 @@ module Xe
     # resuming with a given value.
     class Base
       attr_reader :waiters
-      attr_reader :running_fibers
+      attr_reader :running
 
       def initialize
         @waiters = {}
-        @running_fibers = Set.new
+        @running = Set.new
       end
 
       # Creates a new managed fiber.
       def new_fiber(&blk)
-        Loom::Fiber.new(self, current_depth + 1) do |*args, &fblk|
-          begin
-            fiber_started
-            blk.call(*args, &fblk)
-          ensure
-            fiber_ended
-          end
-        end
+        Loom::Fiber.new(&blk)
       end
 
-      # Transfer control to a managed fiber for the first time.
       def run_fiber(fiber, *args)
-        fiber.resume(*args)
+        Loom::Fiber.resume(fiber)
       end
 
       # Returns true if the fiber is managed.
@@ -41,8 +33,8 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key, *args, &blk)
-        blk.call(key, *args) if block_given?
+      def wait(key, &blk)
+        blk.call(key) if block_given?
       end
 
       # Sequentially return control to all fibers that are waiting on the given
@@ -89,14 +81,25 @@ module Xe
 
       # @protected
       # Adds the current fiber to the running set.
-      def fiber_started
-        @running_fibers << Fiber.current
+      def fiber_started(fiber)
+        @running << fiber
       end
 
       # @protected
       # Removes the current fiber from the running set.
-      def fiber_ended
-        @running_fibers.delete(Fiber.current)
+      def fiber_finished(fiber)
+        @running.delete(fiber)
+      end
+
+      def inspect
+        "#<#{self.class.name}: " \
+        "keys: #{waiters.keys} " \
+        "waiters: #{waiters.values.count} " \
+        "running: #{running.length}>"
+      end
+
+      def to_s
+        inspect
       end
     end
   end
