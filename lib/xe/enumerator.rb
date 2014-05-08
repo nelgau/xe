@@ -1,4 +1,5 @@
 require 'xe/enumerator/impl'
+require 'xe/enumerator/worker'
 
 module Xe
   class Enumerator

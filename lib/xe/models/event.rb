@@ -42,15 +42,20 @@ module Xe
     # Realizes all values in the event's group using the deferrable and returns
     # the result as a hash from ids to values. If a block is given, it invokes
     # the block once for each id, with the id's target and value.
-    def realize(&blk)
+    def realize
       results = deferrable.call(group, group_key)
-      each { |t| yield(t, results[t.id]) } if block_given?
+      if block_given?
+        group.each do |id|
+          target = Target.new(@deferrable, id, @group_key)
+          yield(target, results[id])
+        end
+      end
       results
     end
 
     # Enumerates over all targets in the event.
-    def each(&blk)
-      to_enum.each(&blk)
+    def each
+      group.each
     end
 
     # Returns the count of ids in the event's group.
@@ -71,17 +76,6 @@ module Xe
 
     def to_s
       inspect
-    end
-
-    private
-
-    # Returns an enumerator that yields the event's targets.
-    def to_enum
-      ::Enumerator.new do |y|
-        group.each do |id|
-          y << Target.new(@deferrable, id, @group_key)
-        end
-      end
     end
   end
 end

@@ -9,8 +9,8 @@ module Xe
         end
 
         # Like #map, except that it returns the original collection.
-        def each(&blk)
-          run_map { |o| blk.call(o); o }
+        def each
+          run_map { |o| yield o; o }
         end
       end
     end
