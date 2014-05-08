@@ -19,8 +19,14 @@ module Xe
     # parameter. If no block is given, an enumerator is returned instead. The
     # first item is guaranteed to compare highest relative to the comparator,
     # but all other items are returned in no particular order.
-    def each(&blk)
-      to_enum.each(&blk)
+    def each
+      if block_given?
+        @nodes.each { |n| yield(n.to_a) }
+      else
+        ::Enumerator.new do |y|
+          @nodes.each { |n| y << n.to_a }
+        end
+      end
     end
 
     # Returns the number of items in the heap.
@@ -103,12 +109,6 @@ module Xe
 
     def default_compare
       Proc.new { |o1, o2| o1 <=> o2 }
-    end
-
-    def to_enum
-      ::Enumerator.new do |y|
-        @nodes.each { |n| y << n.to_a }
-      end
     end
 
     def add(key, value)

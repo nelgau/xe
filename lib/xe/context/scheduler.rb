@@ -74,9 +74,9 @@ module Xe
       # Removes and returns the event with the given key. It also notifies the
       # policy that the event was removed.
       def consume_event(key)
-        events.delete(key).tap do |event|
-          policy.remove_event(event) if event
-        end
+        event = events.delete(key)
+        policy.remove_event(event) if event
+        event
       end
     end
   end

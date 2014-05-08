@@ -1,27 +1,10 @@
 require 'xe/context/current'
 require 'xe/context/scheduler'
+require 'xe/context/waiter'
 
 module Xe
   class Context
     extend Current
-
-    # Conditionally create a context and yield it to the block. If a context
-    # already exists for this thread, the existing one is yielded instead.
-    def self.wrap(options={}, &blk)
-      return unless block_given?
-      # If we already have a context, just yield.
-      return blk.call if current
-      # Otherwise, create a new context.
-      begin
-        self.current = new(options)
-        result = blk.call
-        current.finalize
-        result
-      ensure
-        current.invalidate!
-        clear_current
-      end
-    end
 
     # Returns true if a context exists in the current thread.
     def self.exists?
@@ -60,7 +43,7 @@ module Xe
       @max_fibers = options[:max_fibers] || 1
       @logger     = Logger.from_options(options)
 
-      @policy = options[:policy] || Policy::Default.new
+      @policy = options[:policy] || Policy::Base.new
       @loom   = options[:loom]   || Loom::Default.new
 
       @scheduler = Scheduler.new(policy)
@@ -132,9 +115,9 @@ module Xe
       # deferred targets and return a proxy instance in the place of a value.
       log(:value_deferred, target)
       scheduler.add_target(target)
-      proxy(target) do
-        realize_target(target)
-      end
+
+      waiter_proc = Waiter.build_realize(self, target)
+      proxy(target, waiter_proc)
     end
 
     # @protected
@@ -153,37 +136,17 @@ module Xe
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to transfer
     # control), the proxy will call the block that was passed to this method.
-    def proxy(target, &blk)
+    def proxy(target, waiter_proc)
       log(:proxy_new, target)
-      proxy = Proxy.new { wait(target, &blk) }
+      proxy = Proxy.new(waiter_proc)
       (proxies[target] ||= []) << proxy
       proxy
     end
 
-    # @protected
-    # Returns a new fiber that will start execution in the given block. If
-    # creating it would exceed the maximum count allowed in the context's
-    # config, we will realize deferred values until a fiber becomes available.
-    def new_fiber(&blk)
-      # If we can't create a new fiber, run the existing ones.
-      free_fibers unless can_run_fiber?
+    def new_fiber(blk)
+      # free_fibers unless can_run_fiber?
       log(:fiber_new)
-      loom.new_fiber(&blk)
-    end
-
-    # @protected
-    def run_fiber(fiber, *args)
-      loom.run_fiber(fiber, *args)
-    end
-
-    # @protected
-    def fiber_started(fiber)
-      loom.fiber_started(fiber)
-    end
-
-    # @protected
-    def fiber_finished(fiber)
-      loom.fiber_finished(fiber)
+      loom.new_fiber(blk)
     end
 
     # @protected
@@ -229,7 +192,7 @@ module Xe
       log(:event_realize, event)
       event.realize do |target, value|
         log(:value_realized, target)
-        cache[target] = value
+        # cache[target] = value
         dispatch(target, value)
       end
     end
@@ -238,16 +201,16 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
-    def wait(target, &blk)
+    def wait(target)
       log(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, &blk)
+      loom.wait(target) { yield }
     end
 
     # @protected
     # Resume execution of fibers waiting on the target by passing the value
     # back as the result of the corresponding Context#wait invocation.
-    def release(target, value, &blk)
+    def release(target, value)
       count = loom.waiter_count(target)
       log(:fiber_release, target, count)
       loom.release(target, value)
@@ -259,8 +222,11 @@ module Xe
     def resolve(target, value)
       target_proxies = proxies.delete(target)
       log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      return unless target_proxies
-      target_proxies.each { |p| p.__set_subject(value) }
+      Context.set_subjects(target_proxies, value) if target_proxies
+    end
+
+    def self.set_subjects(proxies, value)
+      proxies.each { |p| p.__set_subject(value) }
     end
 
     # @protected

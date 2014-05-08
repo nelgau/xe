@@ -102,7 +102,7 @@ module Xe
     # Accepts a proc that will be called when the proxy is forced to resolve.
     # The return value will become the immediate subject of the proxy (at least
     # until an attempt is made to memoize the subject's chain).
-    def initialize(&resolve_proc)
+    def initialize(resolve_proc)
       ::Kernel.raise ::ArgumentError, "No resolve block given" if !resolve_proc
       @__resolve_proc = resolve_proc
       @__subject = nil

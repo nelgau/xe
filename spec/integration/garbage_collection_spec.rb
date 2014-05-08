@@ -1,77 +1,174 @@
 require 'spec_helper'
-require 'fiber'
 
 Xe.configure do |c|
   c.logger = :stdout
 end
 
+Xe::Proxy.debug!
+
 describe "Xe - Garbage Collection" do
+  include Xe::Test::GC
 
-  def context_classes
-    @context_classes ||= [
-      Xe::Context,
-      Xe::Context::Scheduler,
-      Xe::Loom::Base,
-      Xe::Policy::Base,
-      Xe::Enumerator,
-      Xe::Enumerator::Impl::Base
-    ]
+  after do
+    # After each test's block is out of scope, we should expect all instances
+    # of context-related classes to be collected.
+    expect_gc
   end
 
-  def expect_collected
-    GC.start
-    result = yield
-    result = nil
-    GC.start
-    context_classes.each do |klass|
-      expect(klass).to be_collected
+  def self.define_test(options={})
+    has_output = options.fetch(:has_output, true)
+
+    it "holds no references" do
+      # Invoke the test procedure and immediately discard the result.
+      result = invoke
+      expect(result).to eq(output) if has_output
+      result = nil
     end
-  rescue
-    print_counts
-    raise
   end
 
-  def print_counts
-    puts "Context Classes (counts):".yellow
-    context_classes.each do |klass|
-      objects = ObjectSpace.each_object(klass)
-      count = objects.count
-      if count > 0
-        puts "  #{klass.name}: #{count}".yellow.bold
-        objects.each do |obj|
-          print_object(obj)
+  let(:realizer_value) do
+    Xe.realizer do |xs|
+      xs.each_with_object({}) { |x, rs| rs[x] = x + 1 }
+    end
+  end
+
+  let(:realizer_defer) do
+    Xe.realizer do |xs|
+      xs.each_with_object({}) { |x, rs| rs[x] = realizer_value[x] }
+    end
+  end
+
+  context "when creating a context using 'Xe.context'" do
+    define_test :has_output => false
+    def invoke
+      Xe.context {}
+    end
+  end
+
+  context "with a single-valued enumerator (first)" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { 1 }
+
+    def invoke
+      Xe.context do
+        Xe.enum(input).first
+      end
+    end
+  end
+
+  context "with a single-valued enumerator (inject)" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { 6 }
+
+    def invoke
+      Xe.context do
+        Xe.enum(input).inject(0) { |sum, x| sum + x }
+      end
+    end
+  end
+
+  context "with a single-valued enumerator with unrealized values (inject)" do
+    define_test :has_output => false
+
+    let(:input)  { [1, 2, 3, 4, 5, 6, 7, 8] }
+    let(:output) { 5 }
+
+    def invoke
+      Xe.context do
+        Xe.enum(input).inject(0) do |sum, x|
+          sum + realizer_value[x]
         end
       end
     end
   end
 
-  def print_object(obj)
-    puts "    #{obj.inspect}".yellow
-  end
 
-  it "holds no references (context)" do
-    expect_collected do
-      Xe.context { }
+  context "when mapping values to values" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { [2, 3, 4] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) { |x| x + 1 }
+      end
     end
   end
 
-  # it "holds no references (count)" do
-  #   expect_collected do
-  #     Xe.context { Xe.enum([1, 2, 3]).count { |i| i } }.to_s
-  #   end
-  # end
+  context "when mapping value to value (nested)" do
+    define_test
 
-  it "holds no references (map)" do
-    expect_collected do
-      Xe.map([1, 2, 3]) { |i| i }
+    let(:input)  { [[1, 2], [3, 4], [5, 6]] }
+    let(:output) { [[2, 3], [4, 5], [6, 7]] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) do |arr|
+          Xe.map(arr) { |x| x + 1 }
+        end
+      end
     end
   end
 
-  # it "holds no references (map over realizer)" do
-  #   expect_collected do
-  #     realizer = Xe.realizer { |ids| {1 => 2, 2 => 3, 3 => 4} }
-  #     Xe.map([1, 2, 3]) { |i| realizer[i] }.map(&:to_s)
-  #   end
-  # end
+  context "when mapping values to unrealized values" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { [2, 3, 4] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) { |x| realizer_value[x] }
+      end
+    end
+  end
+
+  context "when mapping values to unrealized values (nested)" do
+    define_test
+
+    let(:input)  { [[1, 2], [3, 4], [5, 6]] }
+    let(:output) { [[2, 3], [4, 5], [6, 7]] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) do |arr|
+          Xe.map(arr) { |x| realizer_value[x] }
+        end
+      end
+    end
+  end
+
+  context "when mapping values to deferred unrealized values" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { [2, 3, 4] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) { |x| realizer_defer[x] }
+      end
+    end
+  end
+
+  context "when mapping values to deferred unrealized values (nested)" do
+    define_test
+
+    let(:input)  { [[1, 2], [3, 4], [5, 6]] }
+    let(:output) { [[2, 3], [4, 5], [6, 7]] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) do |arr|
+          Xe.map(arr) { |x| realizer_defer[x].to_i }
+        end
+      end
+    end
+  end
 
 end

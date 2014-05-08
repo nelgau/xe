@@ -11,8 +11,13 @@ XE_STRESS_LEVEL = 1
 
 require 'xe'
 
+# Xe.configure do |c|
+#   c.logger = :stdout
+# end
+
 require 'support/module'
-require 'support/matchers'
+require 'support/gc'
+
 require 'support/mock'
 require 'support/realizer'
 require 'support/enumeration'
