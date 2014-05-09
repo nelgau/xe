@@ -27,19 +27,7 @@ module Xe
   # You may pass the `:enabled => false` option to the outermost context to
   # disable deferred realization and fiber creation.
   def self.context(options={}, &blk)
-    return unless block_given?
-    # If we already have a context, just yield.
-    return yield(current) if current
-    # Otherwise, create a new context.
-    begin
-      Context.current = Context.new(options)
-      result = yield(current)
-      current.finalize
-      result
-    ensure
-      current.invalidate!
-      Context.clear_current
-    end
+    Context.wrap(options, &blk)
   end
 
   # Constructs a new realizer from a proc. On realization, the block will
@@ -53,13 +41,13 @@ module Xe
   # Execute an `each` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.each(e, options={}, &blk)
-    context { |c| c.enum(e, options).each(&blk) }
+    context { enum(e, options).each(&blk) }
   end
 
   # Execute a `map` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.map(e, options={}, &blk)
-    context { |c| c.enum(e, options).map(&blk) }
+    context { enum(e, options).map(&blk) }
   end
 
   # Returns a generic deferring enumerator for a collection. If no current

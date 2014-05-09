@@ -27,6 +27,7 @@ module Xe
         def run
           object = @consumer.next
           target = Target.new(self, results.length)
+          results << nil
 
           current_iter = Iteration.new(target, false)
           @last_iter = current_iter
@@ -49,14 +50,14 @@ module Xe
           target = current_iter.target
           current_iter.did_proxy = true
 
-          results[target.id] = context.proxy(target) do
+          final_proc = Proc.new do
             context.finalize
             current_iter.result
           end
+
+          proxy = Enumerator::Proxy.new(context, target, final_proc)
+          results[target.id] = context.add_proxy(target, proxy)
         end
-
-
-
 
 
 

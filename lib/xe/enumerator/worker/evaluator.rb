@@ -6,8 +6,6 @@ module Xe
 
         def initialize(eval_proc)
           @eval_proc = eval_proc
-
-          @target = Target.new(self, nil)
           @result = nil
         end
 
@@ -15,18 +13,16 @@ module Xe
           context.loom.fiber_started!
 
           @result = @eval_proc.call
-          context.dispatch(@target, @result)
-
+          target = Target.new(self, nil)
+          context.dispatch(nil, @result)
         ensure
           context.loom.fiber_finished!
         end
 
         def proxy!
-          context.proxy(@target, waiter_proc)
-        end
-
-        def waiter_proc
-          Context::Waiter.build_value(context, @target, final_proc)
+          target = Target.new(self, nil)
+          proxy = Enumerator::Proxy.new(context, target, final_proc)
+          context.add_proxy(@target, proxy)
         end
 
         def final_proc

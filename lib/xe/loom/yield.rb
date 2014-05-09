@@ -9,7 +9,7 @@ module Xe
     class Yield < Base
       # Yields from the current managed fiber and returns the result on resume.
       # If no managed fiber is available, it returns the value of the block.
-      def wait(key)
+      def wait(key, cantwait_proc)
         current = ::Fiber.current
         # If the current fiber isn't managed, we can't wait because we have
         # no assurances that it will behave as needed to correctly resolve all
@@ -20,7 +20,8 @@ module Xe
         push_waiter(key, current)
         # Yield back to whichever fiber that last called Fiber#resume,
         # returning control to either Loom#run_fiber or Loom#release.
-        ::Fiber.yield
+        # Yield in scope where this instance is accessible.
+        Loom::Yield.yield_fiber
       end
 
       # Sequentially return control to all fibers that were suspended by
@@ -28,7 +29,9 @@ module Xe
       # the fibers began waiting for consistency.
       def release(key, value)
         waiters = pop_waiters(key)
-        Loom::Yield.wake_up(waiters, value) if waiters
+        return unless waiters
+        # Release the fibers in scope where this instance is accessible.
+        Loom::Yield.release_fibers(waiters, value)
       end
 
       # Returns the depth of the current managed fiber, or zero if the current
@@ -39,8 +42,16 @@ module Xe
         0
       end
 
-      def self.wake_up(waiters, value)
-        waiters.each { |w| w.resume(value) }
+      # Yield control from the current fiber.
+      def self.yield_fiber
+        ::Fiber.yield
+      end
+
+      # Sequentially return control to the given fibers.
+      def self.release_fibers(fibers, value)
+        while w = fibers.pop
+          w.resume(value)
+        end
       end
     end
   end

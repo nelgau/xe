@@ -33,20 +33,21 @@ module Xe
 
     # Override these methods to define a resolution prodedure.
 
-    # If the receiver doesn't have a subject, set it using the realization
-    # procedure passed to the initializer. Returns the receiver's subject.
+    # If the receiver doesn't have a subject, set it using a resolution.
+    # Returns the receiver's subject.
     def __resolve_subject
       raise NotImplementedError
       @__subject
     end
 
-    # Set the subject and drop all references to the resolution procedure.
-    # Returns the reciever's subject.
-    def __set_subject(subject)
-      @__subject = subject
-      @__has_subject = true
-      @__has_value = !subject.__xe_proxy?
-      @__subject
+    # Drop all references to the resolution procedure.
+    def __invalidate!
+      return
+    end
+
+    # Returns a name for the proxy class.
+    def __xe_proxy_name
+      "Xe::Proxy"
     end
 
     # I'm unhappy with this hack. I'd prefer to have a cleaner solution for
@@ -148,6 +149,16 @@ module Xe
     def __resolve_value
       return @__subject if @__has_value
       __resolve(true)
+    end
+
+    # Set the subject and drop all references to the resolution procedure.
+    # Returns the reciever's subject.
+    def __set_subject(subject)
+      @__subject = subject
+      @__has_subject = true
+      @__has_value = !subject.__xe_proxy?
+      __invalidate!
+      @__subject
     end
 
     # Returns true if the proxy is resolved and has a subject.
