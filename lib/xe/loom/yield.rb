@@ -20,8 +20,7 @@ module Xe
         push_waiter(key, current)
         # Yield back to whichever fiber that last called Fiber#resume,
         # returning control to either Loom#run_fiber or Loom#release.
-        # Yield in scope where this instance is accessible.
-        Loom::Yield.yield_fiber
+        ::Fiber.yield
       end
 
       # Sequentially return control to all fibers that were suspended by
@@ -30,8 +29,9 @@ module Xe
       def release(key, value)
         waiters = pop_waiters(key)
         return unless waiters
-        # Release the fibers in scope where this instance is accessible.
-        Loom::Yield.release_fibers(waiters, value)
+        while w = waiters.pop
+          w.resume(value)
+        end
       end
 
       # Returns the depth of the current managed fiber, or zero if the current
@@ -40,18 +40,6 @@ module Xe
         # current = Loom::Fiber.current
         # managed_fiber?(current) ? current.depth : 0
         0
-      end
-
-      # Yield control from the current fiber.
-      def self.yield_fiber
-        ::Fiber.yield
-      end
-
-      # Sequentially return control to the given fibers.
-      def self.release_fibers(fibers, value)
-        while w = fibers.pop
-          w.resume(value)
-        end
       end
     end
   end

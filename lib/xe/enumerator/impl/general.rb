@@ -12,7 +12,7 @@ module Xe
           # The super keyword is incompatible with #define_method.
           class_eval <<-RUBY, __FILE__, __LINE__ + 1
             def #{m}(*args, &blk)
-              run_value(self.class.build(:#{m}, enumerable, *args, &blk))
+              run_value(&self.class.build(:#{m}, enumerable, *args, &blk))
             end
           RUBY
         end

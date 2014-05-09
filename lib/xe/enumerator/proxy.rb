@@ -15,7 +15,7 @@ module Xe
       # procedure passed to the initializer. Returns the receiver's subject.
       def __resolve_subject
         return @__subject if @__has_subject
-        new_subject = @__context.wait(target, @__force_proc)
+        new_subject = @__context.wait(@__target, @__force_proc)
         __set_subject(new_subject)
       end
 

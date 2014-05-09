@@ -4,19 +4,15 @@ module Xe
       class Evaluator < Base
         attr_reader :result
 
-        def initialize(eval_proc)
+        def initialize(&eval_proc)
           @eval_proc = eval_proc
           @result = nil
         end
 
         def run
-          context.loom.fiber_started!
-
           @result = @eval_proc.call
           target = Target.new(self, nil)
           context.dispatch(nil, @result)
-        ensure
-          context.loom.fiber_finished!
         end
 
         def proxy!

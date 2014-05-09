@@ -10,7 +10,7 @@ describe Xe::Context do
   end
 
   context "when waiting and dispatching (unwrapped)" do
-    define_test :has_output => false
+    define_test! :has_output => false
 
     def invoke
       Xe::Context.current = Xe::Context.new({})
@@ -25,7 +25,7 @@ describe Xe::Context do
   end
 
   context "when waiting and dispatching (wrapped)" do
-    define_test :has_output => false
+    define_test! :has_output => false
 
     def invoke
       Xe.context do
@@ -39,7 +39,7 @@ describe Xe::Context do
   end
 
   context "with an enumerator" do
-    define_test :has_output => false
+    define_test! :has_output => false
 
     def invoke
       Xe.context do
@@ -51,15 +51,10 @@ describe Xe::Context do
   end
 
   context "when an exception is raised within the context" do
-    define_test :has_output => false
+    define_test_with_exception!
 
     def invoke
-      begin
-        Xe.context do
-          raise "Hell"
-        end
-      rescue
-      end
+      Xe.context { raise_exception }
     end
   end
 end

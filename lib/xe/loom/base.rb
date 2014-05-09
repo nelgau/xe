@@ -36,7 +36,7 @@ module Xe
       # key. Control is transfered in the order the fibers began waiting for
       # consistency. The default implementation is empty as the base class
       # can't suspend fibers.
-      def self.release(loom, key, value)
+      def release(key, value)
         return
       end
 
