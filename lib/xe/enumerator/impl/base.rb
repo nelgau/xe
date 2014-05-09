@@ -37,13 +37,14 @@ module Xe
         # Run a computation (returning a single value) within a new managed
         # fiber. If the result blocks on a deferred realization, a proxy for
         # the value is returned instead.
-        def run_value(eval_proc)
+        def run_value(&blk)
           # When serializing, immediately evaluate the block and return.
           return blk.call if !concurrent?
 
           # Create a single fiber in which to evaluate the block.
-          evaluator = Worker::Evaluator.new(eval_proc)
-          fiber = Base.begin_fiber(evaluator.method(:run))
+          evaluator = Worker::Evaluator.new(&blk)
+          run_proc = evaluator.method(:run)
+          fiber = Base.begin_fiber(run_proc)
 
           fiber.alive? ?
             evaluator.proxy! :
@@ -60,8 +61,10 @@ module Xe
 
           # Iteratively create fibers until we exhaust the enumerable.
           mapper = Worker::Mapper.new(enumerable, &blk)
+          run_proc = mapper.method(:run)
+
           until mapper.done?
-            fiber = Base.begin_fiber(mapper.method(:run))
+            fiber = Base.begin_fiber(run_proc)
             mapper.proxy! if fiber.alive?
           end
 

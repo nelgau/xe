@@ -169,7 +169,7 @@ module Xe
     end
 
     def invalidate_proxies
-      all_proxies = proxies.values.flatten
+      all_proxies = proxies.values.inject([], &:concat)
       Context.invalidate_proxies(all_proxies)
       proxies.clear
     end
