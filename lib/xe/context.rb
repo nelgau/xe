@@ -1,10 +1,28 @@
 require 'xe/context/current'
 require 'xe/context/scheduler'
-require 'xe/context/waiter'
+require 'xe/context/proxy'
 
 module Xe
   class Context
     extend Current
+
+    # Conditionally create a context and yield it to the block. If a context
+    # already exists for this thread, the existing one is yielded instead.
+    def self.wrap(options={}, &blk)
+      return unless block_given?
+      # If we already have a context, just yield.
+      return yield if current
+      # Otherwise, create a new context.
+      begin
+        self.current = Context.new(options)
+        result = yield
+        current.finalize
+        result
+      ensure
+        current.invalidate!
+        clear_current
+      end
+    end
 
     # Returns true if a context exists in the current thread.
     def self.exists?
@@ -90,6 +108,9 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
+      invalidate_proxies
+      proxies.clear
+      cache.clear
     end
 
     # @protected
@@ -116,8 +137,9 @@ module Xe
       log(:value_deferred, target)
       scheduler.add_target(target)
 
-      waiter_proc = Waiter.build_realize(self, target)
-      proxy(target, waiter_proc)
+      proxy = Context::Proxy.new(self, target)
+      add_proxy(target, proxy)
+      proxy
     end
 
     # @protected
@@ -130,17 +152,26 @@ module Xe
       release(target, value)
     end
 
+
+    # COMMENT OUT OF DATE
+
     # @protected
     # Returns a new proxy for the given target. If some invocation on the proxy
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to transfer
     # control), the proxy will call the block that was passed to this method.
-    def proxy(target, waiter_proc)
+
+    def add_proxy(target, proxy)
       log(:proxy_new, target)
-      proxy = Proxy.new(waiter_proc)
       (proxies[target] ||= []) << proxy
       proxy
+    end
+
+    def invalidate_proxies
+      all_proxies = proxies.values.flatten
+      Context.invalidate_proxies(all_proxies)
+      proxies.clear
     end
 
     def new_fiber(blk)
@@ -192,7 +223,6 @@ module Xe
       log(:event_realize, event)
       event.realize do |target, value|
         log(:value_realized, target)
-        # cache[target] = value
         dispatch(target, value)
       end
     end
@@ -201,10 +231,10 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
-    def wait(target)
+    def wait(target, cantwait_proc)
       log(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target) { yield }
+      loom.wait(target, cantwait_proc)
     end
 
     # @protected
@@ -222,11 +252,15 @@ module Xe
     def resolve(target, value)
       target_proxies = proxies.delete(target)
       log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      Context.set_subjects(target_proxies, value) if target_proxies
+      Context.set_proxies(target_proxies, value) if target_proxies
     end
 
-    def self.set_subjects(proxies, value)
+    def self.set_proxies(proxies, value)
       proxies.each { |p| p.__set_subject(value) }
+    end
+
+    def self.invalidate_proxies(proxies)
+      proxies.each { |p| p.__invalidate! }
     end
 
     # @protected

@@ -9,15 +9,12 @@ module Xe
         # For each delegate, define a new method that instantiates a fresh
         # enumeration implementation and invokes the operation.
         DELEGATED_METHODS.each do |m|
-          define_method(m) do |*args, &blk|
-            begin
-              impl = Impl.new(m, enumerable, options)
-              impl.send(m, *args, &blk)
-            ensure
-              # Drop references to external objects.
-              impl.invalidate! if impl
+          class_eval <<-RUBY, __FILE__, __LINE__ + 1
+            def #{m}(*args, &blk)
+              impl = Impl.new(:#{m}, enumerable, options)
+              impl.send(:#{m}, *args, &blk)
             end
-          end
+          RUBY
         end
       end
     end

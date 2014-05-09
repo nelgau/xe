@@ -1,30 +1,13 @@
 require 'spec_helper'
 
-Xe.configure do |c|
-  c.logger = :stdout
-end
+# Xe.configure do |c|
+#   c.logger = :stdout
+# end
 
-Xe::Proxy.debug!
+# Xe::Proxy.debug!
 
 describe "Xe - Garbage Collection" do
   include Xe::Test::GC
-
-  after do
-    # After each test's block is out of scope, we should expect all instances
-    # of context-related classes to be collected.
-    expect_gc
-  end
-
-  def self.define_test(options={})
-    has_output = options.fetch(:has_output, true)
-
-    it "holds no references" do
-      # Invoke the test procedure and immediately discard the result.
-      result = invoke
-      expect(result).to eq(output) if has_output
-      result = nil
-    end
-  end
 
   let(:realizer_value) do
     Xe.realizer do |xs|
@@ -40,6 +23,7 @@ describe "Xe - Garbage Collection" do
 
   context "when creating a context using 'Xe.context'" do
     define_test :has_output => false
+
     def invoke
       Xe.context {}
     end
@@ -71,16 +55,16 @@ describe "Xe - Garbage Collection" do
     end
   end
 
-  context "with a single-valued enumerator with unrealized values (inject)" do
+  context "with a single-valued enumerator with realized values (inject)" do
     define_test :has_output => false
 
-    let(:input)  { [1, 2, 3, 4, 5, 6, 7, 8] }
+    let(:input)  { [1] }
     let(:output) { 5 }
 
     def invoke
       Xe.context do
         Xe.enum(input).inject(0) do |sum, x|
-          sum + realizer_value[x]
+          sum + realizer_value[x].to_i
         end
       end
     end
@@ -143,6 +127,34 @@ describe "Xe - Garbage Collection" do
     end
   end
 
+  context "when mapping values to realized values" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { [2, 3, 4] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) { |x| realizer_value[x].to_i }
+      end
+    end
+  end
+
+  context "when mapping values to realized values (nested)" do
+    define_test
+
+    let(:input)  { [[1, 2], [3, 4], [5, 6]] }
+    let(:output) { [[2, 3], [4, 5], [6, 7]] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) do |arr|
+          Xe.map(arr) { |x| realizer_value[x].to_i }
+        end
+      end
+    end
+  end
+
   context "when mapping values to deferred unrealized values" do
     define_test
 
@@ -152,6 +164,34 @@ describe "Xe - Garbage Collection" do
     def invoke
       Xe.context do
         Xe.map(input) { |x| realizer_defer[x] }
+      end
+    end
+  end
+
+  context "when mapping values to deferred unrealized values (nested)" do
+    define_test
+
+    let(:input)  { [[1, 2], [3, 4], [5, 6]] }
+    let(:output) { [[2, 3], [4, 5], [6, 7]] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) do |arr|
+          Xe.map(arr) { |x| realizer_defer[x] }
+        end
+      end
+    end
+  end
+
+  context "when mapping values to deferred unrealized values" do
+    define_test
+
+    let(:input)  { [1, 2, 3] }
+    let(:output) { [2, 3, 4] }
+
+    def invoke
+      Xe.context do
+        Xe.map(input) { |x| realizer_defer[x].to_i }
       end
     end
   end

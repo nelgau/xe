@@ -28,15 +28,15 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key)
-        yield(key) if block_given?
+      def wait(key, cantwait_proc)
+        cantwait_proc.call(key) if block_given?
       end
 
       # Sequentially return control to all fibers that are waiting on the given
       # key. Control is transfered in the order the fibers began waiting for
       # consistency. The default implementation is empty as the base class
       # can't suspend fibers.
-      def release(key, value)
+      def self.release(loom, key, value)
         return
       end
 
