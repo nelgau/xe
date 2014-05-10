@@ -3,7 +3,6 @@ require 'set'
 module Xe
   module Realizer
     class Base < Deferrable
-
       # On passing group keys to .[] and #[] ...
       #
       # Smart clients of Realizer::Base may know best how to group
