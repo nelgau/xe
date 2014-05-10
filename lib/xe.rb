@@ -50,10 +50,10 @@ module Xe
     context { |c| c.enum(e, options).map(&blk) }
   end
 
-  # Returns a generic deferring enumerator for a collection. If no current
-  # context exists, this method raises a NoContextException.
+  # Returns a generic deferrable-aware enumerator for an enumerable. If no
+  # context exists, it raises a NoContextException.
   def self.enum(e, options={}, &blk)
-    raise NoContextError unless Context.exists?
+    raise NoContextError if !Context.exists?
     Context.current.enum(e, options, &blk)
   end
 end

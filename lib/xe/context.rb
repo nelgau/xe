@@ -73,7 +73,7 @@ module Xe
     # Returns a deferrable-aware enumerator for the given collection. This
     # instance conforms to the Enumerable interface.
     def enum(enumerable, options={})
-      Enumerator.new(enumerable, options)
+      Enumerator.new(self, enumerable, options)
     end
 
     # Iteratively realize all outstanding deferred values, event by event,
@@ -114,9 +114,7 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
-
       invalidate_proxies!
-
       @policy = nil
       @loom = nil
       @scheduler = nil
@@ -165,12 +163,11 @@ module Xe
     # Returns a new proxy for the given target. If some invocation on the proxy
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
-    # dispatched. If no managed fiber is avilable (from which to transfer
-    # control), the proxy will call the block passed to this method and set the
-    # return value as its subject.
-    def proxy(target, &force)
+    # dispatched. If no managed fiber is avilable (from which to yield), the
+    # proxy calls force_proc and sets the return value as its subject.
+    def proxy(target, &force_proc)
       trace(:proxy_new, target)
-      proxy = Proxy.new { wait(target, &force) }
+      proxy = Proxy.new { wait(target, &force_proc) }
       (proxies[target] ||= []) << proxy
       proxy
     end
