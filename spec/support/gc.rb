@@ -22,11 +22,11 @@ module Xe::Test
     CONTEXT_CLASSES = [
       Xe::Context,
       Xe::Context::Scheduler,
-      Xe::Loom::Base,
       Xe::Policy::Base,
+      Xe::Loom::Base,
+      Xe::Loom::Fiber,
       Xe::Enumerator,
-      Xe::Enumerator::Impl::Base,
-      ::Fiber
+      Xe::Enumerator::Strategy::Base,
     ]
 
     # Store a reference to the root fiber so we can ignore it.
