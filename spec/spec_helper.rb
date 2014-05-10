@@ -11,11 +11,8 @@ XE_STRESS_LEVEL = 1
 
 require 'xe'
 
-# Xe.configure do |c|
-#   c.logger = :stdout
-# end
-
 require 'support/module'
+require 'support/error'
 require 'support/gc'
 
 require 'support/mock'

@@ -155,10 +155,11 @@ module Xe
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to transfer
-    # control), the proxy will call the block that was passed to this method.
-    def proxy(target, &blk)
+    # control), the proxy will call the block passed to this method and set the
+    # return value as its subject.
+    def proxy(target, &force)
       trace(:proxy_new, target)
-      proxy = Proxy.new { wait(target, blk) }
+      proxy = Proxy.new { wait(target, &force) }
       (proxies[target] ||= []) << proxy
       proxy
     end
@@ -170,9 +171,12 @@ module Xe
     end
 
     def begin_fiber(&blk)
-      # free_fibers unless can_run_fiber?
+      # If we can't start anymore fibers, free some immediately.
+      free_fibers if !can_run_fiber?
       trace(:fiber_new)
-      loom.begin_fiber(&blk)
+      fiber = loom.new_fiber(&blk)
+      loom.run_fiber(fiber)
+      fiber
     end
 
     # @protected
@@ -198,7 +202,7 @@ module Xe
     # @protected
     # Returns true if starting a new fiber would exceed the maximum.
     def can_run_fiber?
-      !max_fibers || loom.running.count < max_fibers
+      !max_fibers || loom.running.length < max_fibers
     end
 
     # @protected
@@ -226,10 +230,10 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
-    def wait(target, cantwait_proc)
+    def wait(target, &cantwait)
       trace(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, cantwait_proc)
+      loom.wait(target, &cantwait)
     end
 
     # @protected

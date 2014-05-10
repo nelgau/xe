@@ -22,11 +22,27 @@ describe Xe do
     subject.realizer(&realizer_proc)
   end
 
+  describe '.configure' do
+
+    it "yields an instance of the configuration object" do
+      captured_config = nil
+      Xe.configure { |c| captured_config = c }
+      expect(captured_config).to be_an_instance_of(Xe::Configuration)
+    end
+
+  end
+
   describe '.context' do
 
-    it "yields to a block with a context" do
+    it "yields to the block with a context" do
       captured_context = nil
       subject.context { captured_context = Xe::Context.current }
+      expect(captured_context).to be_an_instance_of(Xe::Context)
+    end
+
+    it "yields a context to the block" do
+      captured_context = nil
+      subject.context { |c| captured_context = c }
       expect(captured_context).to be_an_instance_of(Xe::Context)
     end
 
@@ -42,7 +58,7 @@ describe Xe do
       expect(invoke_realizer).to be_an_instance_of(Xe::Realizer::Proc)
     end
 
-    it "returns a realizer which immediate yields values" do
+    it "returns a realizer which yields immediate values" do
       expect(invoke_realizer[2]).to eq(4)
     end
 
@@ -53,18 +69,18 @@ describe Xe do
     let(:ids)      { [1, 2, 3, 4] }
     let(:realizer) { invoke_realizer }
 
-    it "returns the enumerated collection" do
+    it "returns the enumerable" do
       result = subject.each(ids) { |i| i + 1 }
       expect(result).to eq(ids)
     end
 
-    it "invokes the block for each" do
+    it "invokes the block for each value" do
       sum = 0
       subject.each(ids) { |i| sum += i }
       expect(sum).to eq(10)
     end
 
-    it "invokes the block for each while deferring values" do
+    it "invokes the block for each value and realizes" do
       sum = 0
       subject.each(ids) { |i| r = realizer[i].to_i; sum += r }
       expect(sum).to eq(20)
@@ -83,17 +99,32 @@ describe Xe do
       expect(result).to eq(output)
     end
 
-    it "maps using deferred values" do
+    it "maps to unrealized values" do
       result = subject.map(ids) { |i| realizer[i] }
       expect(result).to eq(output)
     end
 
+    it "maps to realized values" do
+      result = subject.map(ids) { |i| realizer[i].to_i }
+      expect(result).to eq(output)
+    end
+
     context "while wrapped in a context" do
+      around do |example|
+        Xe.context { example.run }
+      end
+
       let(:output) { [4, 8, 12, 16] }
 
-      it "maps deferred values to deferred values" do
+      it "maps unrealized values to unrealized values" do
         result1 = subject.map(ids) { |i| realizer[i] }
         result2 = subject.map(result1) { |i| realizer[i] }
+        expect(result2).to eq(output)
+      end
+
+      it "maps unrealized values to realized values" do
+        result1 = subject.map(ids) { |i| realizer[i] }
+        result2 = subject.map(result1) { |i| realizer[i].to_i }
         expect(result2).to eq(output)
       end
     end
@@ -104,7 +135,7 @@ describe Xe do
 
     let(:ids)    { [1, 2, 3] }
 
-    context "when a context exists" do
+    context "while wrapped in a context" do
       around do |example|
         Xe.context { example.run }
       end
@@ -122,16 +153,6 @@ describe Xe do
       it "raises Xe::NoContextError" do
         expect { Xe.enum(ids) }.to raise_error(Xe::NoContextError)
       end
-    end
-
-  end
-
-  describe '.configure' do
-
-    it "yields an instance of the configuration object" do
-      captured_config = nil
-      Xe.configure { |c| captured_config = c }
-      expect(captured_config).to be_an_instance_of(Xe::Configuration)
     end
 
   end
