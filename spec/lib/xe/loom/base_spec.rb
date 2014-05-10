@@ -2,6 +2,7 @@ require 'spec_helper'
 
 describe Xe::Loom::Base do
 
+  let(:out) { {} }
   let(:proc) do
     Proc.new do |out, *args|
       out[:ran] = true
@@ -79,7 +80,6 @@ describe Xe::Loom::Base do
     end
 
     it "returns a fiber with the correct execution payload" do
-      out = {}
       fiber.resume(out, 1, 2, 3)
       expect(out[:ran]).to be_true
       expect(out[:args]).to eq([1, 2, 3])
@@ -92,7 +92,6 @@ describe Xe::Loom::Base do
     let(:fiber) { subject.new_fiber(&proc) }
 
     it "resumes the fiber" do
-      out = {}
       subject.run_fiber(fiber, out, 1, 2, 3)
       expect(out[:ran]).to be_true
       expect(out[:args]).to eq([1, 2, 3])
@@ -147,6 +146,31 @@ describe Xe::Loom::Base do
 
     it "is a no-op" do
       subject.release('a', 'b')
+    end
+
+  end
+
+  describe '#running?' do
+
+    context "when there are no running fibers" do
+      it "is false" do
+        expect(subject.running?).to be_false
+      end
+    end
+
+    context "when there is at least one running fiber" do
+      let(:fiber) { subject.new_fiber(&proc) }
+
+      let(:proc) do
+        Proc.new do |out|
+          out[:was_running] = subject.running?
+        end
+      end
+
+      it "it true" do
+        subject.run_fiber(fiber, out)
+        expect(out[:was_running]).to be_true
+      end
     end
 
   end
