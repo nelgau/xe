@@ -10,8 +10,12 @@ module Xe::Test
     # crank this up to further exercise the object graph.
     GC_RUNS = 5
 
-    # Store a reference to the root fiber so we can ignore it.
-    ROOT_FIBER = ::Fiber.current
+    # In Ruby 1.9.3-p448, the interpreter will hold a reference to the last
+    # fiber that yielded control. This is always at most one fiber. In these
+    # specs, we jiggle the handle by default by resuming a new fiber. If you'd
+    # like to track what's retained by that fiber, disable this option. At
+    # most, this should be an empty context.
+    RESUME_FIBER = true
 
     # These are the classes associated with a context and after each operation,
     # none should persist in the heap, even if references to values are held.
@@ -24,6 +28,9 @@ module Xe::Test
       Xe::Enumerator::Impl::Base,
       ::Fiber
     ]
+
+    # Store a reference to the root fiber so we can ignore it.
+    ROOT_FIBER = ::Fiber.current
 
     # These instances are not expected to be garbage collected.
     IGNORED_INSTANCES = [
@@ -112,7 +119,7 @@ module Xe::Test
     def self.verify_gc(classes=nil)
       # Workarounds for references stored within the interpreter itself.
       release_interpreter_lock
-      clear_last_fiber
+      clear_last_fiber if RESUME_FIBER
 
       # Let the garbage collector go hog wild with lazy sweeping.
       GC_RUNS.times do

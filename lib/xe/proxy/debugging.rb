@@ -13,10 +13,9 @@ module Xe
         :object_id,
         :__send__,
         :__id__,
-        # Tracing these methods will cause an infinite regress. There's a
+        # Tracing this method will cause an infinite regress. There's a
         # solution of course, but it's not worth the effort and complexity.
-        :__xe_proxy?,
-        :__xe_proxy_name
+        :__xe_proxy?
       ]
 
       def self.included(base)
@@ -72,8 +71,7 @@ module Xe
       end
 
       def self.inspect_proxy(proxy)
-        name = proxy.__xe_proxy_name
-        "#<#{name} id: #{proxy_id_as_hex(proxy)} -> #{proxy_state(proxy)}>"
+        "#<Xe::Proxy id: #{proxy_id_as_hex(proxy)} -> #{proxy_state(proxy)}>"
       end
 
       def self.inspect_value(value)

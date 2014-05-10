@@ -2,27 +2,23 @@ module Xe
   class Enumerator
     module Worker
       class Evaluator < Base
+        attr_reader :eval_proc
+        attr_reader :target
         attr_reader :result
 
         def initialize(&eval_proc)
           @eval_proc = eval_proc
+          @target = Target.new(self)
           @result = nil
         end
 
         def run
           @result = @eval_proc.call
-          target = Target.new(self, nil)
-          context.dispatch(nil, @result)
+          context.dispatch(@target, @result)
         end
 
         def proxy!
-          target = Target.new(self, nil)
-          proxy = Enumerator::Proxy.new(context, target, final_proc)
-          context.add_proxy(@target, proxy)
-        end
-
-        def final_proc
-          Proc.new do
+          context.proxy(@target) do
             context.finalize
             @result
           end

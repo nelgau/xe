@@ -1,6 +1,5 @@
 require 'xe/context/current'
 require 'xe/context/scheduler'
-require 'xe/context/proxy'
 
 module Xe
   class Context
@@ -136,10 +135,9 @@ module Xe
       # deferred targets and return a proxy instance in the place of a value.
       log(:value_deferred, target)
       scheduler.add_target(target)
-
-      proxy = Context::Proxy.new(self, target)
-      add_proxy(target, proxy)
-      proxy
+      proxy(target) do
+        realize_target(target)
+      end
     end
 
     # @protected
@@ -152,18 +150,15 @@ module Xe
       release(target, value)
     end
 
-
-    # COMMENT OUT OF DATE
-
     # @protected
     # Returns a new proxy for the given target. If some invocation on the proxy
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to transfer
     # control), the proxy will call the block that was passed to this method.
-
-    def add_proxy(target, proxy)
+    def proxy(target, &blk)
       log(:proxy_new, target)
+      proxy = Proxy.new { wait(target, blk) }
       (proxies[target] ||= []) << proxy
       proxy
     end

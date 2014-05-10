@@ -8,7 +8,7 @@ module Xe
         # Used to share state between the run method and the next invocation
         # of #proxy! when the fiber is suspended. In the case of the immediate
         # resolution of the proxy, it will fetch the result from here.
-        Iteration = Struct.new(:target, :result, :did_proxy)
+        Iteration = Struct.new(:target, :did_proxy, :result)
 
         def initialize(enumerable, &map_proc)
           raise ArgumentError, "No block given" unless block_given?
@@ -27,6 +27,11 @@ module Xe
         def run
           object = @consumer.next
           target = Target.new(self, results.length)
+
+          # Create a new item in the results array with a temporary value
+          # and store the index of this position. If the computation can't
+          # be realized immediately, this temporary value will be replaced
+          # by a proxy with (2).
           results << nil
 
           current_iter = Iteration.new(target, false)
@@ -50,13 +55,10 @@ module Xe
           target = current_iter.target
           current_iter.did_proxy = true
 
-          final_proc = Proc.new do
+          results[target.id] = context.proxy(target) do
             context.finalize
             current_iter.result
           end
-
-          proxy = Enumerator::Proxy.new(context, target, final_proc)
-          results[target.id] = context.add_proxy(target, proxy)
         end
 
 

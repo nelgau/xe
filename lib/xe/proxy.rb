@@ -31,25 +31,6 @@ module Xe
     include Proxy::BasicObject
     include Proxy::Identification
 
-    # Override these methods to define a resolution prodedure.
-
-    # If the receiver doesn't have a subject, set it using a resolution.
-    # Returns the receiver's subject.
-    def __resolve_subject
-      raise NotImplementedError
-      @__subject
-    end
-
-    # Drop all references to the resolution procedure.
-    def __invalidate!
-      return
-    end
-
-    # Returns a name for the proxy class.
-    def __xe_proxy_name
-      "Xe::Proxy"
-    end
-
     # I'm unhappy with this hack. I'd prefer to have a cleaner solution for
     # distinguishing proxies from values. However, every alternative seems to
     # have some non-negligable performance overhead that I'm uncomfortable
@@ -99,6 +80,7 @@ module Xe
       send(:include, Debugging)
     end
 
+    attr_reader :__resolve_proc
     attr_reader :__subject
 
     # Returns true if obj is a proxy, and false if it's a value. This is the
@@ -120,7 +102,9 @@ module Xe
     # Accepts a proc that will be called when the proxy is forced to resolve.
     # The return value will become the immediate subject of the proxy (at least
     # until an attempt is made to memoize the subject's chain).
-    def initialize
+    def initialize(&resolve_proc)
+      ::Kernel.raise ::ArgumentError, "No resolve block given" if !resolve_proc
+      @__resolve_proc = resolve_proc
       @__subject = nil
       @__has_subject = false
       @__has_value = false
@@ -151,16 +135,6 @@ module Xe
       __resolve(true)
     end
 
-    # Set the subject and drop all references to the resolution procedure.
-    # Returns the reciever's subject.
-    def __set_subject(subject)
-      @__subject = subject
-      @__has_subject = true
-      @__has_value = !subject.__xe_proxy?
-      __invalidate!
-      @__subject
-    end
-
     # Returns true if the proxy is resolved and has a subject.
     def __resolved?
       @__has_subject
@@ -169,6 +143,36 @@ module Xe
     # Returns true if the proxy is resolved and the subject is a value.
     def __value?
       @__has_value
+    end
+
+    # @protected
+    # Set the proxy's subject and drop all references to the resolution
+    # procedure. Although this method is called by the context when a
+    # realization event occurs, it shouldn't be considered a public interface.
+    def __set_subject(subject)
+      @__subject = subject
+      @__has_subject = true
+      @__has_value = !subject.__xe_proxy?
+      __invalidate!
+      @__subject
+    end
+
+    # @protected
+    # Drop all references to the resolution procedure.
+    def __invalidate!
+      # Allow the garbage collector to reclaim the block's captured scope.
+      @__resolve_proc = nil
+    end
+
+    # The following methods are used for deep subject resolution and
+    # memoization. They are a protected interface shared among proxies.
+
+    # @protected
+    # If the receiver doesn't have a subject, set it using the realization
+    # procedure passed to the initializer. Returns the receiver's subject.
+    def __resolve_subject
+      __set_subject(@__resolve_proc.call) if !@__has_subject
+      @__subject
     end
 
     # @protected
