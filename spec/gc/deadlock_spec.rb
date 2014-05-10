@@ -15,7 +15,7 @@ describe "Xe - Garbage Collection (Deadlock)" do
     end
   end
 
-  context "when a fiber waits and is never released" do
+  context "when a fiber is waiting and never released" do
     define_test_with_exception!
 
     def invoke

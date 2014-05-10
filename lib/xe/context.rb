@@ -34,11 +34,13 @@ module Xe
       exists? && current.enabled?
     end
 
+    attr_reader :options
     attr_reader :max_fibers
     attr_reader :policy
     attr_reader :tracer
 
     attr_reader :scheduler
+    attr_reader :policy
     attr_reader :loom
     attr_reader :proxies
     attr_reader :cache
@@ -55,14 +57,14 @@ module Xe
     #
     def initialize(options={})
       # Merge the given options with the global config.
-      options = Xe.config.context_options.merge(options)
+      @options = Xe.config.context_options.merge(options)
 
-      @enabled    = options.fetch(:enabled, false)
-      @max_fibers = options[:max_fibers] || 1
-      @tracer     = Tracer.from_options(options)
+      @enabled    = @options.fetch(:enabled, false)
+      @max_fibers = @options[:max_fibers] || 1
+      @tracer     = Tracer.from_options(@options)
 
-      @policy = options[:policy] || Policy::Base.new
-      @loom   = options[:loom]   || Loom::Default.new
+      @policy = @options[:policy] || Policy::Base.new
+      @loom   = @options[:loom]   || Loom::Default.new
 
       @scheduler = Scheduler.new(policy)
       @proxies = {}
@@ -97,8 +99,8 @@ module Xe
 
     # Raises an exception unless the context is fully resolved.
     def assert_vacant!
-      raise InconsistentContextError unless scheduler.empty?
-      raise InconsistentContextError unless !loom.running? || !loom.running?
+      raise InconsistentContextError if !scheduler.empty?
+      raise InconsistentContextError if loom.running? || loom.waiters?
     end
 
     # Returns true when the context allows deferring values.
@@ -119,7 +121,7 @@ module Xe
       @loom = nil
       @scheduler = nil
       @proxies = nil
-      @cached = nil
+      @cache = nil
     end
 
     # Defer the realization of a single value on the deferrable by returning a
@@ -170,12 +172,6 @@ module Xe
       proxy = Proxy.new { wait(target, &force_proc) }
       (proxies[target] ||= []) << proxy
       proxy
-    end
-
-    def invalidate_proxies!
-      all_proxies = proxies.values.inject([], &:concat)
-      Context.invalidate_proxies!(all_proxies)
-      proxies.clear
     end
 
     def begin_fiber(&blk)
@@ -238,10 +234,10 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
-    def wait(target, &cantwait)
+    def wait(target, &cantwait_proc)
       trace(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, &cantwait)
+      loom.wait(target, &cantwait_proc)
     end
 
     # @protected
@@ -259,15 +255,14 @@ module Xe
     def resolve(target, value)
       target_proxies = proxies.delete(target)
       trace(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      Context.set_proxies(target_proxies, value) if target_proxies
+      return if !target_proxies
+      target_proxies.each { |p| p.__set_subject(value) }
     end
 
-    def self.set_proxies(proxies, value)
-      proxies.each { |p| p.__set_subject(value) }
-    end
-
-    def self.invalidate_proxies!(proxies)
-      proxies.each { |p| p.__invalidate! }
+    def invalidate_proxies!
+      all_proxies = proxies.values.inject([], &:concat)
+      all_proxies.each { |p| p.__invalidate! }
+      proxies.clear
     end
 
     # @protected

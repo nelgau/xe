@@ -14,7 +14,7 @@ describe "Xe - Deadlock" do
     end
   end
 
-  context "when a fiber waits and is never released" do
+  context "when a fiber is waiting and never released" do
 
     def invoke
       Xe.context do |c|
@@ -23,7 +23,7 @@ describe "Xe - Deadlock" do
       end
     end
 
-    it "deadlocks" do
+    it "detects deadlock" do
       expect { invoke }.to raise_error(Xe::DeadlockError)
     end
 
@@ -40,7 +40,7 @@ describe "Xe - Deadlock" do
       end
     end
 
-    it "deadlocks" do
+    it "detects deadlock" do
       expect { invoke }.to raise_error(Xe::DeadlockError)
     end
 

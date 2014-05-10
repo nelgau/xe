@@ -30,6 +30,7 @@ module Xe
 
     attr_reader :context
     attr_reader :enumerable
+    attr_reader :options
     attr_reader :tag
 
     # Initializes an instance of a defferable-aware enumerator. You can pass
@@ -38,6 +39,7 @@ module Xe
       raise NoContextError if context.nil?
       @context = context
       @enumerable = enumerable
+      @options = options
       @tag = options[:tag]
     end
 
