@@ -18,10 +18,10 @@ describe Xe::Configuration do
 
   end
 
-  describe '#logger' do
+  describe '#tracer' do
 
     it "defaults to nil" do
-      expect(subject.logger).to be_nil
+      expect(subject.tracer).to be_nil
     end
 
   end
@@ -40,8 +40,8 @@ describe Xe::Configuration do
       expect(subject.context_options.has_key?(:max_fibers)).to_not be_nil
     end
 
-    it "contains :logger" do
-      expect(subject.context_options.has_key?(:logger)).to_not be_nil
+    it "contains :tracer" do
+      expect(subject.context_options.has_key?(:tracer)).to_not be_nil
     end
 
   end

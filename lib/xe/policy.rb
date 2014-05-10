@@ -3,6 +3,6 @@ require 'xe/policy/heap'
 
 module Xe
   module Policy
-    Default = Base
+    Default = Heap
   end
 end

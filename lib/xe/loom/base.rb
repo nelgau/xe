@@ -17,10 +17,12 @@ module Xe
         @waiters = {}
       end
 
-      def begin_fiber(&blk)
-        fiber = Fiber.new(self, current_depth + 1, &blk)
-        fiber.resume
-        fiber
+      def new_fiber(&blk)
+        Fiber.new(self, current_depth + 1, &blk)
+      end
+
+      def run_fiber(fiber, *args)
+        fiber.resume(*args)
       end
 
       # Returns true if the fiber is managed.
@@ -32,8 +34,8 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key, cantwait_proc)
-        cantwait_proc.call(key) if cantwait_proc
+      def wait(key, &cantwait)
+        yield(key) if block_given?
       end
 
       # Sequentially return control to all fibers that are waiting on the given

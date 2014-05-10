@@ -3,14 +3,18 @@ module Xe
     class Fiber < ::Fiber
       attr_reader :depth
 
+      # Initialize the fiber to call the entry point.
       def initialize(loom, depth, &blk)
         @depth = depth
-        super() { Fiber.start(loom, &blk) }
+        super() do |*args|
+          self.class.start(loom, *args, &blk)
+        end
       end
 
-      def self.start(loom, &blk)
+      # The entry point for all fibers.
+      def self.start(loom, *args, &blk)
         loom.fiber_started!
-        blk.call
+        blk.call(*args)
       ensure
         loom.fiber_finished!
       end
