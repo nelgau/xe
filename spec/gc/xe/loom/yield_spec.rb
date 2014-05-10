@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe Xe::Loom::Yield do
+describe "Xe::Loom::Yield - Garbage Collection" do
   include Xe::Test::GC
 
   context "when waiting and releasing a fiber" do
-    define_test! :has_output => false
+    define_test! has_output: false
 
     def invoke
       loom = Xe::Loom::Yield.new

@@ -1,13 +1,13 @@
 require 'spec_helper'
 
-describe "Xe - Randomized Enumeration Topology" do
+describe "Xe - Randomized Topology" do
 
   let(:options) { {
     :max_fibers => 20
   } }
 
   def self.depths
-    [1, 2, 4, 8]
+    [1, 2, 4, 6]
   end
 
   class DistinctValuesError < StandardError
@@ -41,7 +41,7 @@ describe "Xe - Randomized Enumeration Topology" do
 
         XE_STRESS_LEVEL.times do |attempt|
           it "is consistent (attempt #{attempt + 1})" do
-            factory = Xe::Test::Enumeration::Random.new(:max_depth => depth)
+            factory = Xe::Test::Enumeration::Random.new(max_depth: depth)
             run_and_verify(factory.build, factory.seed)
           end
         end

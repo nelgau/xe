@@ -11,11 +11,11 @@ module Xe
     def self.wrap(options={}, &blk)
       return unless block_given?
       # If we already have a context, just yield.
-      return yield if current
+      return yield(current) if current
       # Otherwise, create a new context.
       begin
         self.current = Context.new(options)
-        result = yield
+        result = yield(current)
         current.finalize
         result
       ensure

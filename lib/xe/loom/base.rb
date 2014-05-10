@@ -29,7 +29,7 @@ module Xe
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
       def wait(key, cantwait_proc)
-        cantwait_proc.call(key) if block_given?
+        cantwait_proc.call(key) if cantwait_proc
       end
 
       # Sequentially return control to all fibers that are waiting on the given
