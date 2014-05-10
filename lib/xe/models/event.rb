@@ -44,12 +44,7 @@ module Xe
     # the block once for each id, with the id's target and value.
     def realize
       results = deferrable.call(group, group_key)
-      if block_given?
-        group.each do |id|
-          target = Target.new(@deferrable, id, @group_key)
-          yield(target, results[id])
-        end
-      end
+      targets.each { |t| yield(t, results[t.id]) } if block_given?
       results
     end
 
@@ -66,6 +61,12 @@ module Xe
     # Returns true if the event is empty.
     def empty?
       group.empty?
+    end
+
+    def targets
+      group.map do |id|
+        Target.new(@deferrable, id, @group_key)
+      end
     end
 
     def inspect

@@ -134,7 +134,7 @@ describe Xe::Event do
     context "when a block is given" do
       it "yields a target and value for each id" do
         yielded_ids = []
-        # Check that each target has the correct deferrable, group_key and value.
+        # Check that it has the correct deferrable, group_key and value.
         subject.realize do |target, value|
           expect(target.source).to eq(deferrable)
           expect(target.group_key).to eq(group_key)
@@ -209,6 +209,27 @@ describe Xe::Event do
 
       it "is false" do
         expect(subject).to_not be_empty
+      end
+    end
+
+  end
+
+  describe '#targets' do
+
+    let(:ids) {
+      [1, 2, 3]
+    }
+
+    before do
+      ids.each { |id| subject << id }
+    end
+
+    it "is an enumerable of the targets of this event" do
+      subject.targets.each do |target|
+        # Check that it has the correct deferrable, group_key and value.
+        expect(target.source).to eq(deferrable)
+        expect(target.group_key).to eq(group_key)
+        expect(subject.group).to include(target.id)
       end
     end
 

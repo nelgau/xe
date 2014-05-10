@@ -147,6 +147,7 @@ module Xe
       trace(:value_deferred, target)
       scheduler.add_target(target)
       proxy(target) do
+        trace(:value_forced, target)
         realize_target(target)
       end
     end
@@ -174,9 +175,13 @@ module Xe
       proxy
     end
 
+    # @protected
+    # Returns a new fiber that will start execution in the given block. If
+    # creating it would exceed the maximum count allowed in the context's
+    # config, we will realize deferred values until a fiber becomes available.
     def begin_fiber(&blk)
       # If we can't start anymore fibers, free some immediately.
-      free_fibers if !can_run_fiber?
+      free_fibers if !can_begin_fiber?
       trace(:fiber_new)
       fiber = loom.new_fiber(&blk)
       loom.run_fiber(fiber)
@@ -195,26 +200,27 @@ module Xe
         trace(:fiber_free, event)
         realize_event(event)
         # As soon as a fiber is available, we're done.
-        return if can_run_fiber?
+        return if can_begin_fiber?
       end
       # If we still can't create a new fiber, we've deadlocked.
-      if !can_run_fiber?
+      if !can_begin_fiber?
         raise DeadlockError
       end
     end
 
     # @protected
     # Returns true if starting a new fiber would exceed the maximum.
-    def can_run_fiber?
+    def can_begin_fiber?
       !max_fibers || loom.running.length < max_fibers
     end
 
     # @protected
     # Immediately realizes the given target along with others that are grouped
-    # with it in the scheduler's queue.
+    # with it in the scheduler's queue. If the target isn't in the scheduler,
+    # this method raises InconsistentContextError.
     def realize_target(target)
-      trace(:value_forced, target)
       event = scheduler.pop_event(target)
+      raise InconsistentContextError if !event
       realize_event(event)[target.id]
     end
 
@@ -226,6 +232,7 @@ module Xe
       trace(:event_realize, event)
       event.realize do |target, value|
         trace(:value_realized, target)
+        cache[target] = value
         dispatch(target, value)
       end
     end
