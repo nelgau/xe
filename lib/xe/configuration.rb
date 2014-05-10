@@ -5,12 +5,12 @@ module Xe
     # Maximum number of fibers that the context will run concurrently.
     attr_accessor :max_fibers
     # An instance of Xe::Logger::Base that receives events from the context.
-    attr_accessor :logger
+    attr_accessor :tracer
 
     def initialize
       @enabled = true
       @max_fibers = 50
-      @logger = nil
+      @tracer = nil
     end
 
     # Returns a hash of default options for new contexts.
@@ -18,7 +18,7 @@ module Xe
       return {
         :enabled => enabled,
         :max_fibers => max_fibers,
-        :logger => logger
+        :tracer => tracer
       }
     end
   end
