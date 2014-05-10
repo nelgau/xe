@@ -63,7 +63,7 @@ module Xe
       @max_fibers = @options[:max_fibers] || 1
       @tracer     = Tracer.from_options(@options)
 
-      @policy = @options[:policy] || Policy::Base.new
+      @policy = @options[:policy] || Policy::Default.new
       @loom   = @options[:loom]   || Loom::Default.new
 
       @scheduler = Scheduler.new(policy)
