@@ -1,16 +1,18 @@
 require 'spec_helper'
 
-describe Xe::Context do
+describe "Xe::Context - Garbage Collection" do
   include Xe::Test::GC
 
   let(:realizer) do
     Xe.realizer do |xs|
-      xs.each_with_object({}) { |x, rs| rs[x] = x + 1 }
+      xs.each_with_object({}) do |x, rs|
+        rs[x] = x + 1
+      end
     end
   end
 
   context "when waiting and dispatching (unwrapped)" do
-    define_test! :has_output => false
+    define_test! has_output: false
 
     def invoke
       Xe::Context.current = Xe::Context.new({})
@@ -25,7 +27,7 @@ describe Xe::Context do
   end
 
   context "when waiting and dispatching (wrapped)" do
-    define_test! :has_output => false
+    define_test! has_output: false
 
     def invoke
       Xe.context do
@@ -39,7 +41,7 @@ describe Xe::Context do
   end
 
   context "with an enumerator" do
-    define_test! :has_output => false
+    define_test! has_output: false
 
     def invoke
       Xe.context do
