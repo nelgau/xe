@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Xe::Logger::Event do
+describe Xe::Tracer::Event do
 
   let(:deferrable) { Xe::Deferrable.new }
   let(:target)     { Xe::Target.new(deferrable, 0) }

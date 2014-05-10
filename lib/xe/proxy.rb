@@ -153,9 +153,15 @@ module Xe
       @__subject = subject
       @__has_subject = true
       @__has_value = !subject.__xe_proxy?
+      __invalidate!
+      @__subject
+    end
+
+    # @protected
+    # Drop all references to the resolution procedure.
+    def __invalidate!
       # Allow the garbage collector to reclaim the block's captured scope.
       @__resolve_proc = nil
-      @__subject
     end
 
     # The following methods are used for deep subject resolution and

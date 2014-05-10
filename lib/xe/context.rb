@@ -10,11 +10,11 @@ module Xe
     def self.wrap(options={}, &blk)
       return unless block_given?
       # If we already have a context, just yield.
-      return blk.call if current
+      return yield(current) if current
       # Otherwise, create a new context.
       begin
-        self.current = new(options)
-        result = blk.call
+        self.current = Context.new(options)
+        result = yield(current)
         current.finalize
         result
       ensure
@@ -35,7 +35,7 @@ module Xe
 
     attr_reader :max_fibers
     attr_reader :policy
-    attr_reader :logger
+    attr_reader :tracer
 
     attr_reader :scheduler
     attr_reader :loom
@@ -50,7 +50,7 @@ module Xe
     #   :max_fibers - Maximum number of fibers to run concurrently. Creating
     #                 a fiber that would exceed this threshold causes
     #                 immediate realization of deferred values.
-    #   :logger     - An instance of Xe::Logger::Base. Defaults to nil.
+    #   :tracer     - An instance of Xe::Tracer::Base. Defaults to nil.
     #
     def initialize(options={})
       # Merge the given options with the global config.
@@ -58,9 +58,9 @@ module Xe
 
       @enabled    = options.fetch(:enabled, false)
       @max_fibers = options[:max_fibers] || 1
-      @logger     = Logger.from_options(options)
+      @tracer     = Tracer.from_options(options)
 
-      @policy = options[:policy] || Policy::Default.new
+      @policy = options[:policy] || Policy::Base.new
       @loom   = options[:loom]   || Loom::Default.new
 
       @scheduler = Scheduler.new(policy)
@@ -78,18 +78,18 @@ module Xe
     # Iteratively realize all outstanding deferred values, event by event,
     # It will eventually release all waiting fibers (or deadlock).
     def finalize
-      log(:finalize_start)
+      trace(:finalize_start)
       # Realize outstanding deferrals in the order given by the scheduler.
       until scheduler.empty?
         event = scheduler.next_event
-        log(:finalize_step, event)
+        trace(:finalize_step, event)
         realize_event(event)
       end
       # If fibers are still waiting (but there are no deferred targets in the
       # queue that could unblock them), then the game is over and we have
       # surely deadlocked.
       if loom.waiters?
-        log(:finalize_deadlock)
+        trace(:finalize_deadlock)
         raise DeadlockError
       end
     end
@@ -107,6 +107,9 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
+      invalidate_proxies
+      proxies.clear
+      cache.clear
     end
 
     # @protected
@@ -124,13 +127,13 @@ module Xe
       target = Target.new(deferrable, id, group_key)
       # If this target was cached in a previous realization, return that value.
       if cache.has_key?(target)
-        log(:value_cached, target)
+        trace(:value_cached, target)
         return cache[target]
       end
 
       # Defer realization of the target. Add it to the scheduler's queue of
       # deferred targets and return a proxy instance in the place of a value.
-      log(:value_deferred, target)
+      trace(:value_deferred, target)
       scheduler.add_target(target)
       proxy(target) do
         realize_target(target)
@@ -142,7 +145,7 @@ module Xe
     # are waiting on realization. Because targets don't contain unrealized
     # values, this will NEVER suspend the current fiber.
     def dispatch(target, value)
-      log(:value_dispatched, target)
+      trace(:value_dispatched, target)
       resolve(target, value)
       release(target, value)
     end
@@ -152,38 +155,28 @@ module Xe
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to transfer
-    # control), the proxy will call the block that was passed to this method.
-    def proxy(target, &blk)
-      log(:proxy_new, target)
-      proxy = Proxy.new { wait(target, &blk) }
+    # control), the proxy will call the block passed to this method and set the
+    # return value as its subject.
+    def proxy(target, &force)
+      trace(:proxy_new, target)
+      proxy = Proxy.new { wait(target, &force) }
       (proxies[target] ||= []) << proxy
       proxy
     end
 
-    # @protected
-    # Returns a new fiber that will start execution in the given block. If
-    # creating it would exceed the maximum count allowed in the context's
-    # config, we will realize deferred values until a fiber becomes available.
-    def new_fiber(&blk)
-      # If we can't create a new fiber, run the existing ones.
-      free_fibers unless can_run_fiber?
-      log(:fiber_new)
-      loom.new_fiber(&blk)
+    def invalidate_proxies
+      all_proxies = proxies.values.inject([], &:concat)
+      Context.invalidate_proxies(all_proxies)
+      proxies.clear
     end
 
-    # @protected
-    def run_fiber(fiber, *args)
-      loom.run_fiber(fiber, *args)
-    end
-
-    # @protected
-    def fiber_started(fiber)
-      loom.fiber_started(fiber)
-    end
-
-    # @protected
-    def fiber_finished(fiber)
-      loom.fiber_finished(fiber)
+    def begin_fiber(&blk)
+      # If we can't start anymore fibers, free some immediately.
+      free_fibers if !can_run_fiber?
+      trace(:fiber_new)
+      fiber = loom.new_fiber(&blk)
+      loom.run_fiber(fiber)
+      fiber
     end
 
     # @protected
@@ -195,7 +188,7 @@ module Xe
       # exhaust all events in the scheduler.
       until scheduler.empty?
         event = scheduler.next_event
-        log(:fiber_free, event)
+        trace(:fiber_free, event)
         realize_event(event)
         # As soon as a fiber is available, we're done.
         return if can_run_fiber?
@@ -209,14 +202,14 @@ module Xe
     # @protected
     # Returns true if starting a new fiber would exceed the maximum.
     def can_run_fiber?
-      !max_fibers || loom.running.count < max_fibers
+      !max_fibers || loom.running.length < max_fibers
     end
 
     # @protected
     # Immediately realizes the given target along with others that are grouped
     # with it in the scheduler's queue.
     def realize_target(target)
-      log(:value_forced, target)
+      trace(:value_forced, target)
       event = scheduler.pop_event(target)
       realize_event(event)[target.id]
     end
@@ -226,10 +219,9 @@ module Xe
     # to their associated target, releasing any waiting fibers. The value is
     # cached in the context so that further deferrals return immediately.
     def realize_event(event)
-      log(:event_realize, event)
+      trace(:event_realize, event)
       event.realize do |target, value|
-        log(:value_realized, target)
-        cache[target] = value
+        trace(:value_realized, target)
         dispatch(target, value)
       end
     end
@@ -238,18 +230,18 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
-    def wait(target, &blk)
-      log(:fiber_wait, target)
+    def wait(target, &cantwait)
+      trace(:fiber_wait, target)
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, &blk)
+      loom.wait(target, &cantwait)
     end
 
     # @protected
     # Resume execution of fibers waiting on the target by passing the value
     # back as the result of the corresponding Context#wait invocation.
-    def release(target, value, &blk)
+    def release(target, value)
       count = loom.waiter_count(target)
-      log(:fiber_release, target, count)
+      trace(:fiber_release, target, count)
       loom.release(target, value)
     end
 
@@ -258,15 +250,22 @@ module Xe
     # references to the context before #__set_subject returns.
     def resolve(target, value)
       target_proxies = proxies.delete(target)
-      log(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      return unless target_proxies
-      target_proxies.each { |p| p.__set_subject(value) }
+      trace(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
+      Context.set_proxies(target_proxies, value) if target_proxies
+    end
+
+    def self.set_proxies(proxies, value)
+      proxies.each { |p| p.__set_subject(value) }
+    end
+
+    def self.invalidate_proxies(proxies)
+      proxies.each { |p| p.__invalidate! }
     end
 
     # @protected
-    # Log an event to the context's logger.
-    def log(*args)
-      @logger.call(*args) if @logger
+    # Log an event to the context's tracer.
+    def trace(*args)
+      @tracer.call(*args) if @tracer
     end
 
     def inspect

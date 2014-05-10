@@ -12,7 +12,9 @@ XE_STRESS_LEVEL = 1
 require 'xe'
 
 require 'support/module'
-require 'support/matchers'
+require 'support/error'
+require 'support/gc'
+
 require 'support/mock'
 require 'support/realizer'
 require 'support/enumeration'

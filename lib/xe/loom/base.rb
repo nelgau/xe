@@ -1,27 +1,28 @@
+require 'fiber'
+
 module Xe
   module Loom
-    # The superclass of all loom exceptions.
-    class Error < StandardError; end
-
     # This class is responsible for creating managed fibers, suspending their
     # execution into keyed groups, and returning control to these groups by
     # resuming with a given value.
     class Base
-      attr_reader :waiters
+      # To protect ourselves from cyclic references, this set doesn't actually
+      # contain the set of running fibers, only their hashes, making it
+      # possibly to compute the number of running fibers without holding them.
       attr_reader :running
+      attr_reader :waiters
 
       def initialize
-        @waiters = {}
         @running = Set.new
+        @waiters = {}
       end
 
-      # Creates a new managed fiber.
       def new_fiber(&blk)
-        Loom::Fiber.new(&blk)
+        Fiber.new(self, current_depth + 1, &blk)
       end
 
       def run_fiber(fiber, *args)
-        Loom::Fiber.resume(fiber)
+        fiber.resume(*args)
       end
 
       # Returns true if the fiber is managed.
@@ -33,8 +34,8 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key, &blk)
-        blk.call(key) if block_given?
+      def wait(key, &cantwait)
+        yield(key) if block_given?
       end
 
       # Sequentially return control to all fibers that are waiting on the given
@@ -73,28 +74,28 @@ module Xe
       # Pop and enumerate all waiters for a given key. These waiters are
       # dequeued immediately and all at once to clear the path for new waiters
       # that might block on the same key after control is resumed.
-      def pop_waiters(key, &blk)
+      def pop_waiters(key)
         key_waiters = waiters.delete(key)
         return unless key_waiters
-        key_waiters.each(&blk)
+        key_waiters
       end
 
       # @protected
       # Adds the current fiber to the running set.
-      def fiber_started(fiber)
-        @running << fiber
+      def fiber_started!
+        @running << Fiber.current.hash
       end
 
       # @protected
       # Removes the current fiber from the running set.
-      def fiber_finished(fiber)
-        @running.delete(fiber)
+      def fiber_finished!
+        @running.delete(Fiber.current.hash)
       end
 
       def inspect
         "#<#{self.class.name}: " \
         "keys: #{waiters.keys} " \
-        "waiters: #{waiters.values.count} " \
+        "waiters: #{waiters.length} " \
         "running: #{running.length}>"
       end
 

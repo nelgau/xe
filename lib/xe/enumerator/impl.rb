@@ -1,4 +1,3 @@
-require 'xe/enumerator/impl/fibers'
 require 'xe/enumerator/impl/delegators'
 require 'xe/enumerator/impl/base'
 require 'xe/enumerator/impl/general'

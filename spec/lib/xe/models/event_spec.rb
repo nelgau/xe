@@ -131,36 +131,36 @@ describe Xe::Event do
       expect(subject.realize).to eq(results)
     end
 
-    it "yields a target and value for each id" do
-      yielded_ids = []
-      # Check that each target has the correct deferrable, group_key and value.
-      subject.realize do |target, value|
-        expect(target.source).to eq(deferrable)
-        expect(target.group_key).to eq(group_key)
-        expect(value).to eq(results[target.id])
-        yielded_ids << target.id
-      end
-      # Check that we have all the ids.
-      expect(yielded_ids).to match_array(ids)
-    end
-
-    context "when a result is missing" do
-
-      before do
-        results.delete(1)
-      end
-
-      it "yields a nil value for this target" do
+    context "when a block is given" do
+      it "yields a target and value for each id" do
         yielded_ids = []
-        # Ensure that the missing result is yielded as nil.
+        # Check that each target has the correct deferrable, group_key and value.
         subject.realize do |target, value|
-          expect(value).to be_nil if target.id == 1
+          expect(target.source).to eq(deferrable)
+          expect(target.group_key).to eq(group_key)
+          expect(value).to eq(results[target.id])
           yielded_ids << target.id
         end
         # Check that we have all the ids.
         expect(yielded_ids).to match_array(ids)
       end
 
+      context "when a result is missing" do
+        before do
+          results.delete(1)
+        end
+
+        it "yields a nil value for this target" do
+          yielded_ids = []
+          # Ensure that the missing result is yielded as nil.
+          subject.realize do |target, value|
+            expect(value).to be_nil if target.id == 1
+            yielded_ids << target.id
+          end
+          # Check that we have all the ids.
+          expect(yielded_ids).to match_array(ids)
+        end
+      end
     end
 
   end
@@ -175,23 +175,8 @@ describe Xe::Event do
       ids.each { |id| subject << id }
     end
 
-    context "when no block is given" do
-      it "is an enumerator" do
-        expect(subject.each).to be_an_instance_of(Enumerator)
-      end
-
-      it "is an enumeator that returns all targets" do
-        enum = subject.each
-        yielded_ids = []
-        # Check that each target has the correct deferrable and group_key.
-        enum.to_a.each do |target|
-          expect(target.source).to eq(deferrable)
-          expect(target.group_key).to eq(group_key)
-          yielded_ids << target.id
-        end
-        # Check that we have all the ids.
-        expect(yielded_ids).to match_array(ids)
-      end
+    it "enumerates all ids in the group" do
+      expect(subject.each.to_a).to eq(ids)
     end
 
   end

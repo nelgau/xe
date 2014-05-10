@@ -1,12 +1,12 @@
 require 'logger'
 
 module Xe
-  module Logger
+  module Tracer
     class Text < Base
       attr_reader :logger
 
       def initialize(options={})
-        @logger = options[:logger] || default_logger
+        @logger = options[:logger] || Logger.new(nil)
       end
 
       private
@@ -73,12 +73,6 @@ module Xe
 
       def log(string)
         logger.info(string)
-      end
-
-      def default_logger
-        ::Logger.new(STDOUT).tap do |logger|
-          logger.formatter = lambda { |_, _, _, m| "#{m}\n" }
-        end
       end
     end
   end

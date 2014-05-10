@@ -1,49 +1,22 @@
 module Xe
   module Loom
-    module Fiber
-      # Returns the current fiber.
-      def self.current
-        ::Fiber.current
-      end
+    class Fiber < ::Fiber
+      attr_reader :depth
 
-      # Creates a new managed fiber.
-      def self.new(*args, &blk)
-        ::Fiber.new do |*args, &fblk|
-          begin
-            started!
-            blk.call(*args, &fblk)
-          rescue => e
-            puts "Uncaught exception in fiber! #{e}"
-            raise e
-          ensure
-            finished!
-          end
+      # Initialize the fiber to call the entry point.
+      def initialize(loom, depth, &blk)
+        @depth = depth
+        super() do |*args|
+          self.class.start(loom, *args, &blk)
         end
       end
 
-      # Transfer control back to the given fiber.
-      def self.resume(fiber)
-        fiber.resume(fiber)
-      end
-
-      # Yields execution from the current fiber.
-      def self.yield
-        ::Fiber.yield
-      end
-
-      # Called when a fiber begins executing.
-      def self.started!
-        # context.fiber_started(current) if context
-      end
-
-      # Called when a fiber finishes executing
-      def self.finished!
-        # context.fiber_finished(current) if context
-      end
-
-      # Returns the current thread-local context, or nil if none exists.
-      def self.context
-        Context.current
+      # The entry point for all fibers.
+      def self.start(loom, *args, &blk)
+        loom.fiber_started!
+        blk.call(*args)
+      ensure
+        loom.fiber_finished!
       end
     end
   end

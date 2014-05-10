@@ -3,9 +3,9 @@ require 'spec_helper'
 describe Xe::Proxy do
   include Xe::Test::Mock::Proxy
 
-  subject { Xe::Proxy.new(&subject_proc) }
+  subject { Xe::Proxy.new(&resolve_proc) }
 
-  let(:subject_proc)  { Proc.new { subject_value } }
+  let(:resolve_proc)  { Proc.new { subject_value } }
   let(:subject_value) { new_value_mock(1) }
   let(:non_proxy)     { new_value_mock(2) }
 
@@ -109,7 +109,7 @@ describe Xe::Proxy do
     end
 
     it "sets the __resolve_proc attribute to the given block" do
-      expect(subject.__resolve_proc).to eq(subject_proc)
+      expect(subject.__resolve_proc).to eq(resolve_proc)
     end
 
     context "when no block is given" do
@@ -173,7 +173,7 @@ describe Xe::Proxy do
       end
 
       it "doesn't call __resolve_proc" do
-        expect(subject_proc).to_not receive(:call)
+        expect(resolve_proc).to_not receive(:call)
         invoke_resolve
       end
 
@@ -386,7 +386,7 @@ describe Xe::Proxy do
       end
 
       it "doesn't call __resolve_proc" do
-        expect(subject_proc).to_not receive(:call)
+        expect(resolve_proc).to_not receive(:call)
         subject.__resolve_value
       end
 
@@ -500,7 +500,7 @@ describe Xe::Proxy do
       expect(subject.__resolved?).to be_true
     end
 
-    it "sets the subject_proc attribute to nil" do
+    it "sets the resolve_proc attribute to nil" do
       subject.__set_subject(object)
       expect(subject.__resolve_proc).to be_nil
     end
@@ -535,11 +535,20 @@ describe Xe::Proxy do
 
   end
 
+  describe '#__invalidate!' do
+
+    it "sets the resolve_proc attribute to nil" do
+      subject.__invalidate!
+      expect(subject.__resolve_proc).to be_nil
+    end
+
+  end
+
   describe '#__resolve_subject' do
 
     context "when the proxy has no subject" do
       it "calls __resolve_proc" do
-        expect(subject_proc).to receive(:call).and_call_original
+        expect(resolve_proc).to receive(:call).and_call_original
         subject.__resolve_subject
       end
 
@@ -562,7 +571,7 @@ describe Xe::Proxy do
       end
 
       it "doesn't call the __resolve_proc" do
-        expect(subject_proc).to_not receive(:call)
+        expect(resolve_proc).to_not receive(:call)
         subject.__resolve_subject
       end
 

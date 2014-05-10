@@ -3,7 +3,7 @@ require 'xe/errors'
 require 'xe/configuration'
 require 'xe/singletons'
 require 'xe/utility'
-require 'xe/logger'
+require 'xe/tracer'
 require 'xe/proxy'
 require 'xe/loom'
 require 'xe/models'
@@ -14,6 +14,12 @@ require 'xe/enumerator'
 
 module Xe
   extend Singletons
+
+  # Yields a configuration object with which you can control the default
+  # behavior of new contexts (e.g., max_fibers).
+  def self.configure
+    yield(config) if block_given?
+  end
 
   # Create a new context with the given options (if one doesn't already exist),
   # yield this context to the given block and return the result. If this
@@ -35,28 +41,19 @@ module Xe
   # Execute an `each` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.each(e, options={}, &blk)
-    context(options) { Xe.enum(e, options).each(&blk) }
+    context { |c| c.enum(e, options).each(&blk) }
   end
 
   # Execute a `map` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.map(e, options={}, &blk)
-    Context.current = Context.new(options)
-    result = Xe.enum(e, options).map(&blk)
-    Context.current = nil
-    result
+    context { |c| c.enum(e, options).map(&blk) }
   end
 
   # Returns a generic deferring enumerator for a collection. If no current
   # context exists, this method raises a NoContextException.
-  def self.enum(e, options={})
+  def self.enum(e, options={}, &blk)
     raise NoContextError unless Context.exists?
-    Context.current.enum(e, options)
-  end
-
-  # Yields a configuration object with which you can control the default
-  # behavior of new contexts (e.g., max_fibers).
-  def self.configure
-    yield(config) if block_given?
+    Context.current.enum(e, options, &blk)
   end
 end

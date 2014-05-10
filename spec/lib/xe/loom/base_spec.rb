@@ -43,27 +43,25 @@ describe Xe::Loom::Base do
       expect(subject.running).to be_empty
     end
 
-    it "contains running fibers" do
-      captured_fibers = nil
+    it "contains hashes of running fibers" do
+      captured_running = nil
       fiber = subject.new_fiber do
-        captured_fibers = subject.running.to_a
+        captured_running = subject.running.to_a
       end
       subject.run_fiber(fiber)
-      expect(captured_fibers).to include(fiber)
+      expect(captured_running).to include(fiber.hash)
     end
 
     it "doesn't contain fibers which are no longer running" do
-      captured_fibers = nil
       fiber = subject.new_fiber {}
       subject.run_fiber(fiber)
-      expect(subject.running).to_not include(fiber)
+      expect(subject.running).to_not include(fiber.hash)
     end
 
     it "doesn't contain fibers which raised an exception" do
-      captured_fibers = nil
-      fiber = subject.new_fiber { raise }
-      expect { subject.run_fiber(fiber) }.to raise_error
-      expect(subject.running).to_not include(fiber)
+      fiber = subject.new_fiber { raise Xe::Test::Error }
+      expect { subject.run_fiber(fiber) }.to raise_error(Xe::Test::Error)
+      expect(subject.running).to_not include(fiber.hash)
     end
 
   end
@@ -74,10 +72,6 @@ describe Xe::Loom::Base do
 
     it "returns a new instance of Xe::Fiber" do
       expect(fiber).to be_an_instance_of(Xe::Loom::Fiber)
-    end
-
-    it "returns a fiber associated to the loom" do
-      expect(fiber.loom).to eq(subject)
     end
 
     it "returns a fiber with a depth one greater than the current depth" do
@@ -256,17 +250,6 @@ describe Xe::Loom::Base do
       it "removes the waiters" do
         subject.pop_waiters('a')
         expect(subject.waiters.has_key?('a')).to be_false
-      end
-
-      context "when a block is given" do
-        it "invokes the block with each waiter" do
-          yielded_waiters = []
-          subject.pop_waiters('a') do |waiter|
-            yielded_waiters << waiter
-          end
-          expect(yielded_waiters).to eq([fiber1, fiber2])
-        end
-
       end
 
     end
