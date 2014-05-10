@@ -1,5 +1,5 @@
 module Xe
-  module Logger
+  module Tracer
     class Base
       def call(type, *args)
         send(type, *args)

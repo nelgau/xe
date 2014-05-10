@@ -1,35 +1,43 @@
 require 'spec_helper'
 
-describe Xe::Logger do
+describe Xe::Tracer do
 
-  subject { Xe::Logger }
+  subject { Xe::Tracer }
 
   describe '.from_options' do
 
-    let(:options) { {:logger => logger} }
-    let(:logger)  { nil }
+    let(:options) { {:tracer => tracer} }
+    let(:tracer)  { nil }
 
     context "when option is ':stdout'" do
-      let(:logger) { :stdout }
+      let(:tracer) { :stdout }
 
-      it "returns an instance of Xe::Logger::Text" do
+      it "returns an instance of Xe::Tracer::Text" do
         result = subject.from_options(options)
-        expect(result).to be_an_instance_of(Xe::Logger::Text)
+        expect(result).to be_an_instance_of(Xe::Tracer::Text)
       end
     end
 
     context "when option is a logger instance" do
-      let(:logger) { Xe::Logger::Base.new }
+      let(:tracer) { Xe::Tracer::Base.new }
 
       it "returns the logger instance" do
         result = subject.from_options(options)
-        expect(result).to eq(logger)
+        expect(result).to eq(tracer)
       end
     end
 
   end
 
-  shared_examples_for "a logger" do
+  describe '.default_logger' do
+
+    it "is an instance of Logger" do
+      expect(subject.default_logger).to be_an_instance_of(Logger)
+    end
+
+  end
+
+  shared_examples_for "a tracer" do
 
     let(:deferrable) { Xe::Deferrable.new }
     let(:target)     { Xe::Target.new(deferrable, 0) }
@@ -106,20 +114,20 @@ describe Xe::Logger do
 
   end
 
-  describe Xe::Logger::Base do
-    subject { Xe::Logger::Base.new }
-    it_behaves_like "a logger"
+  describe Xe::Tracer::Base do
+    subject { Xe::Tracer::Base.new }
+    it_behaves_like "a tracer"
   end
 
-  describe Xe::Logger::Text do
-    subject { Xe::Logger::Text.new(:logger => logger) }
-    let(:logger) { Logger.new(nil) }
-    it_behaves_like "a logger"
+  describe Xe::Tracer::Text do
+    subject { Xe::Tracer::Text.new(:logger => logger) }
+    let(:logger) { ::Logger.new(nil) }
+    it_behaves_like "a tracer"
   end
 
-  describe Xe::Logger::Event do
-    subject { Xe::Logger::Event.new }
-    it_behaves_like "a logger"
+  describe Xe::Tracer::Event do
+    subject { Xe::Tracer::Event.new }
+    it_behaves_like "a tracer"
   end
 
 end

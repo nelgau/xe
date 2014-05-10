@@ -1,5 +1,5 @@
 module Xe
-  module Logger
+  module Tracer
     class Event < Base
       attr_reader :events
 
