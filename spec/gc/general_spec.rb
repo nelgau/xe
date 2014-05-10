@@ -1,4 +1,4 @@
-require 'spec_helper'
+ require 'spec_helper'
 
 describe "Xe - Garbage Collection" do
   include Xe::Test::GC
