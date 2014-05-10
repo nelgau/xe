@@ -50,6 +50,22 @@ describe Xe do
       expect(subject.context { 2 }).to eq(2)
     end
 
+    context "wrapping an existing context" do
+      it "yields the same context" do
+        captured_context1 = nil
+        captured_context2 = nil
+
+        subject.context do |c1|
+          captured_context1 = c1
+          subject.context do |c2|
+            captured_context2 = c2
+          end
+        end
+
+        expect(captured_context1).to eq(captured_context2)
+      end
+    end
+
   end
 
   describe '.realizer' do
