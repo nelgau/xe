@@ -145,6 +145,11 @@ module Xe
       @__has_value
     end
 
+    # Returns true if the proxy has not been invalidated.
+    def __valid?
+      !!@__resolve_proc
+    end
+
     # @protected
     # Set the proxy's subject and drop all references to the resolution
     # procedure. Although this method is called by the context when a
@@ -169,9 +174,12 @@ module Xe
 
     # @protected
     # If the receiver doesn't have a subject, set it using the realization
-    # procedure passed to the initializer. Returns the receiver's subject.
+    # procedure passed to the initializer. Raises InvalidProxyError is the
+    # proxy is invalid, otherwise returns the receiver's subject.
     def __resolve_subject
-      __set_subject(@__resolve_proc.call) if !@__has_subject
+      return @__subject if @__has_subject
+      ::Kernel.raise ::Xe::InvalidProxyError if !@__resolve_proc
+      __set_subject(@__resolve_proc.call)
       @__subject
     end
 

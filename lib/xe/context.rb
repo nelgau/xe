@@ -16,6 +16,7 @@ module Xe
         self.current = Context.new(options)
         result = yield(current)
         current.finalize
+        # current.assert_vacant!
         result
       ensure
         current.invalidate!
@@ -107,12 +108,16 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
-      invalidate_proxies
-      proxies.clear
+      invalidate_proxies!
       cache.clear
     end
 
-    # @protected
+    # Raises an exception unless the context is fully resolved.
+    def assert_vacant!
+      raise InconsistentContextError unless scheduler.empty?
+      raise InconsistentContextError unless !loom.running? || !loom.running?
+    end
+
     # Defer the realization of a single value on the deferrable by returning a
     # proxy instance. The proxy can be stored in containers and passed to
     # methods without realizing it. However, invoking a method on it will
@@ -164,9 +169,9 @@ module Xe
       proxy
     end
 
-    def invalidate_proxies
+    def invalidate_proxies!
       all_proxies = proxies.values.inject([], &:concat)
-      Context.invalidate_proxies(all_proxies)
+      # all_proxies.each { |p| p.__invalidate! }
       proxies.clear
     end
 
@@ -246,20 +251,13 @@ module Xe
     end
 
     # @protected
-    # Explicitly resolve any proxies for the given target. They will drop all
-    # references to the context before #__set_subject returns.
+    # Resolve any proxies for the given target by setting the value of their
+    # subject. They will drop all references to the context.
     def resolve(target, value)
       target_proxies = proxies.delete(target)
       trace(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      Context.set_proxies(target_proxies, value) if target_proxies
-    end
-
-    def self.set_proxies(proxies, value)
-      proxies.each { |p| p.__set_subject(value) }
-    end
-
-    def self.invalidate_proxies(proxies)
-      proxies.each { |p| p.__invalidate! }
+      return unless target_proxies
+      target_proxies.each { |p| p.__set_subject(value) }
     end
 
     # @protected

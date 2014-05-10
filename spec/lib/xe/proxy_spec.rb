@@ -486,6 +486,38 @@ describe Xe::Proxy do
 
   end
 
+  describe '#__valid?' do
+
+    context "before invalidation" do
+      it "is true" do
+        expect(subject.__valid?).to be_true
+      end
+    end
+
+    context "after invalidation" do
+      before do
+        subject.__invalidate!
+      end
+
+      it "is false" do
+        expect(subject.__valid?).to be_false
+      end
+    end
+
+    context "after setting the subject" do
+      let(:object) { new_value_mock(0) }
+
+      before do
+        subject.__set_subject(object)
+      end
+
+      it "is false" do
+        expect(subject.__valid?).to be_false
+      end
+    end
+
+  end
+
   describe '#__set_subject' do
 
     let(:object) { new_value_mock(0) }
@@ -583,6 +615,18 @@ describe Xe::Proxy do
       it "returns the subject" do
         result = subject.__resolve_subject
         expect(result).to eq(existing_value)
+      end
+    end
+
+    context "when the proxy is invalid" do
+      before do
+        subject.__invalidate!
+      end
+
+      it "raises Xe::InvalidProxyError" do
+        expect {
+          subject.__resolve_subject
+        }.to raise_error(Xe::InvalidProxyError)
       end
     end
 
