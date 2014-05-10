@@ -4,6 +4,10 @@ describe Xe::Tracer do
 
   subject { Xe::Tracer }
 
+  let(:deferrable) { Xe::Deferrable.new }
+  let(:target)     { Xe::Target.new(deferrable, 0) }
+  let(:event)      { Xe::Event.from_target(target) }
+
   describe '.from_options' do
 
     let(:options) { { tracer: tracer } }
@@ -37,11 +41,18 @@ describe Xe::Tracer do
 
   end
 
-  shared_examples_for "a tracer" do
+  describe '#call' do
 
-    let(:deferrable) { Xe::Deferrable.new }
-    let(:target)     { Xe::Target.new(deferrable, 0) }
-    let(:event)      { Xe::Event.from_target(target) }
+    subject { Xe::Tracer::Base.new }
+
+    it "invokes the method named by type" do
+      expect(subject).to receive(:event_realize).with(event)
+      subject.call(:event_realize, event)
+    end
+
+  end
+
+  shared_examples_for "a tracer" do
 
     describe '#call' do
 

@@ -225,7 +225,7 @@ describe Xe::Event do
   describe '#to_s' do
 
     it "is a string" do
-      expect(subject.inspect).to be_an_instance_of(String)
+      expect(subject.to_s).to be_an_instance_of(String)
     end
 
   end
