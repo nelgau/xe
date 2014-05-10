@@ -41,13 +41,13 @@ module Xe
   # Execute an `each` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.each(e, options={}, &blk)
-    context { |c| c.enum(e, options).each(&blk) }
+    context(options) { |c| c.enum(e, options).each(&blk) }
   end
 
   # Execute a `map` operation over a collection using a deferring enumerator.
   # If no current context exists, the operation is wrapped.
   def self.map(e, options={}, &blk)
-    context { |c| c.enum(e, options).map(&blk) }
+    context(options) { |c| c.enum(e, options).map(&blk) }
   end
 
   # Returns a generic deferrable-aware enumerator for an enumerable. If no
