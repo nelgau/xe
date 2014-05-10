@@ -18,7 +18,7 @@ module Xe
       end
 
       def new_fiber(&blk)
-        Fiber.new(self, current_depth + 1, &blk)
+        Loom::Fiber.new(self, current_depth + 1, &blk)
       end
 
       def run_fiber(fiber, *args)
@@ -34,7 +34,7 @@ module Xe
       # When the value become available, it is returned from the invocation.
       # If the current fiber can't be suspended, the block is invoked if given,
       # and the result is returned. The default implementation can't suspend.
-      def wait(key, &cantwait)
+      def wait(key, &cantwait_proc)
         yield(key) if block_given?
       end
 
@@ -48,12 +48,12 @@ module Xe
 
       # Returns true if any fibers are presently running.
       def running?
-        running.any?
+        !running.empty?
       end
 
       # Returns true if any fibers are presently suspended.
       def waiters?
-        waiters.any?
+        !waiters.empty?
       end
 
       # Returns the count of fibers suspended on the given key.
