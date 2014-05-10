@@ -169,10 +169,12 @@ module Xe
       proxies.clear
     end
 
-    def new_fiber(blk)
+    def begin_fiber(&blk)
       # free_fibers unless can_run_fiber?
       trace(:fiber_new)
-      loom.new_fiber(blk)
+      fiber = Loom::Fiber.new(&blk)
+      fiber.resume
+      fiber
     end
 
     # @protected

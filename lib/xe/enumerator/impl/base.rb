@@ -44,7 +44,7 @@ module Xe
           # Create a single fiber in which to evaluate the block.
           evaluator = Worker::Evaluator.new(&blk)
           run_proc = evaluator.method(:run)
-          fiber = Base.begin_fiber(run_proc)
+          fiber = Context.current.begin_fiber(&run_proc)
 
           fiber.alive? ?
             evaluator.proxy! :
@@ -64,7 +64,7 @@ module Xe
           run_proc = mapper.method(:run)
 
           until mapper.done?
-            fiber = Base.begin_fiber(run_proc)
+            fiber = Context.current.begin_fiber(&run_proc)
             mapper.proxy! if fiber.alive?
           end
 
@@ -76,14 +76,6 @@ module Xe
         # subclasses may override this method to enforce stricter conditions.
         def concurrent?
           Context.current.enabled?
-        end
-
-        private
-
-        def self.begin_fiber(blk)
-          fiber = ::Fiber.new(&blk)
-          fiber.resume
-          fiber
         end
       end
     end
