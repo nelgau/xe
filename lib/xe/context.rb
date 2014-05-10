@@ -16,7 +16,7 @@ module Xe
         self.current = Context.new(options)
         result = yield(current)
         current.finalize
-        # current.assert_vacant!
+        current.assert_vacant!
         result
       ensure
         current.invalidate!
@@ -171,7 +171,7 @@ module Xe
 
     def invalidate_proxies!
       all_proxies = proxies.values.inject([], &:concat)
-      # all_proxies.each { |p| p.__invalidate! }
+      all_proxies.each { |p| p.__invalidate! }
       proxies.clear
     end
 
