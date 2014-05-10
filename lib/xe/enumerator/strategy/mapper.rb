@@ -64,7 +64,7 @@ module Xe
           emit_proxy(@last_iter) if !@last_iter.has_value
         end
 
-        # Greedily consume objects from the enumerable until we run out or
+        # Greedily consume objects from the enumerable until we run out, or
         # we know that evaluating the iterator blocked and substituted a proxy.
         def consume
           # (1) Iterate until we run out of objects. Each iteration will add a
