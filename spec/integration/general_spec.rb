@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Xe - Simple" do
+describe "Xe - General" do
 
   it "creates a context" do
     Xe.context {}
