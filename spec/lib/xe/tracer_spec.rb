@@ -6,7 +6,7 @@ describe Xe::Tracer do
 
   describe '.from_options' do
 
-    let(:options) { {:tracer => tracer} }
+    let(:options) { { tracer: tracer } }
     let(:tracer)  { nil }
 
     context "when option is ':stdout'" do
@@ -120,7 +120,7 @@ describe Xe::Tracer do
   end
 
   describe Xe::Tracer::Text do
-    subject { Xe::Tracer::Text.new(:logger => logger) }
+    subject { Xe::Tracer::Text.new(logger: logger) }
     let(:logger) { ::Logger.new(nil) }
     it_behaves_like "a tracer"
   end

@@ -4,10 +4,5 @@ module Xe
     def config
       @config ||= Configuration.new
     end
-
-    # Synonym for the current context.
-    def current
-      Context.current
-    end
   end
 end
