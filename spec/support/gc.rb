@@ -48,8 +48,10 @@ module Xe::Test
       # against which the return value of `invoke` will be compared. You can
       # disable this behavior by passing :has_output => false.
       def define_test!(options={})
+        name = options[:name] || "holds no references"
         has_output = options.fetch(:has_output, true)
-        it "holds no references" do
+
+        it name do
           _expect_gc!
           # Invoke the test procedure and immediately discard the result.
           result = invoke
