@@ -16,6 +16,7 @@ module Xe
         self.current = Context.new(options)
         result = yield(current)
         current.finalize
+        # current.assert_vacant!
         result
       ensure
         current.invalidate!
@@ -112,7 +113,12 @@ module Xe
       cache.clear
     end
 
-    # @protected
+    # Raises an exception unless the context is fully resolved.
+    def assert_vacant!
+      raise InconsistentContextError unless scheduler.empty?
+      raise InconsistentContextError unless !loom.running? || !loom.running?
+    end
+
     # Defer the realization of a single value on the deferrable by returning a
     # proxy instance. The proxy can be stored in containers and passed to
     # methods without realizing it. However, invoking a method on it will
