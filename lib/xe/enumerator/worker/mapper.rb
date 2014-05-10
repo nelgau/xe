@@ -56,7 +56,7 @@ module Xe
           current_iter.did_proxy = true
 
           results[target.id] = context.proxy(target) do
-            context.finalize
+            context.finalize!
             current_iter.result
           end
         end

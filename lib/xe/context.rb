@@ -15,7 +15,7 @@ module Xe
       begin
         self.current = Context.new(options)
         result = yield(current)
-        current.finalize
+        current.finalize!
         current.assert_vacant!
         result
       ensure
@@ -78,7 +78,7 @@ module Xe
 
     # Iteratively realize all outstanding deferred values, event by event,
     # It will eventually release all waiting fibers (or deadlock).
-    def finalize
+    def finalize!
       trace(:finalize_start)
       # Realize outstanding deferrals in the order given by the scheduler.
       until scheduler.empty?
@@ -95,6 +95,12 @@ module Xe
       end
     end
 
+    # Raises an exception unless the context is fully resolved.
+    def assert_vacant!
+      raise InconsistentContextError unless scheduler.empty?
+      raise InconsistentContextError unless !loom.running? || !loom.running?
+    end
+
     # Returns true when the context allows deferring values.
     def enabled?
       !!@enabled
@@ -108,14 +114,14 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
-      invalidate_proxies!
-      cache.clear
-    end
 
-    # Raises an exception unless the context is fully resolved.
-    def assert_vacant!
-      raise InconsistentContextError unless scheduler.empty?
-      raise InconsistentContextError unless !loom.running? || !loom.running?
+      invalidate_proxies!
+
+      @policy = nil
+      @loom = nil
+      @scheduler = nil
+      @proxies = nil
+      @cached = nil
     end
 
     # Defer the realization of a single value on the deferrable by returning a
@@ -171,7 +177,7 @@ module Xe
 
     def invalidate_proxies!
       all_proxies = proxies.values.inject([], &:concat)
-      all_proxies.each { |p| p.__invalidate! }
+      Context.invalidate_proxies!(all_proxies)
       proxies.clear
     end
 
@@ -256,8 +262,15 @@ module Xe
     def resolve(target, value)
       target_proxies = proxies.delete(target)
       trace(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      return unless target_proxies
-      target_proxies.each { |p| p.__set_subject(value) }
+      Context.set_proxies(target_proxies, value) if target_proxies
+    end
+
+    def self.set_proxies(proxies, value)
+      proxies.each { |p| p.__set_subject(value) }
+    end
+
+    def self.invalidate_proxies!(proxies)
+      proxies.each { |p| p.__invalidate! }
     end
 
     # @protected
@@ -267,11 +280,15 @@ module Xe
     end
 
     def inspect
-      "#<#{self.class.name}: " \
-        "fibers: #{loom.running.length} " \
-        "queued: #{scheduler.events.length} " \
-        "proxies: #{proxies.length} " \
-        "cached: #{cache.length}>"
+      if valid?
+        "#<#{self.class.name}: " \
+          "fibers: #{loom.running.length} " \
+          "queued: #{scheduler.events.length} " \
+          "proxies: #{proxies.length} " \
+          "cached: #{cache.length}>"
+      else
+        "#<#{self.class.name}: INVALID>"
+      end
     end
 
     def to_s

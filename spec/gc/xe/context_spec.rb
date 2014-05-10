@@ -11,19 +11,65 @@ describe "Xe::Context - Garbage Collection" do
     end
   end
 
+  def run_fiber
+    Fiber.new(&method(:fiber_payload)).resume
+  end
+
+  def fiber_payload
+    realizer[1].to_i
+  end
+
   context "when waiting and dispatching (unwrapped)" do
-    define_test! has_output: false
 
-    def invoke
-      Xe::Context.current = Xe::Context.new({})
-      Fiber.new(&method(:fiber)).resume
-      Xe::Context.current.finalize
-      Xe::Context.clear_current
+    context "when nominal" do
+      define_test! has_output: false
+
+      def invoke
+        Xe::Context.current = Xe::Context.new({})
+        run_fiber
+        Xe::Context.current.finalize!
+      ensure
+        Xe::Context.current.invalidate!
+        Xe::Context.clear_current
+      end
     end
 
-    def fiber
-      realizer[1].to_i
+    context "when #finalize! is not invoked" do
+      define_test! has_output: false
+
+      def invoke
+        Xe::Context.current = Xe::Context.new({})
+        run_fiber
+      ensure
+        Xe::Context.current.invalidate!
+        Xe::Context.clear_current
+      end
     end
+
+    context "when #invalidate is not invoked" do
+      define_test! has_output: false
+
+      def invoke
+        Xe::Context.current = Xe::Context.new({})
+        run_fiber
+        Xe::Context.current.finalize!
+      ensure
+        Xe::Context.clear_current
+      end
+    end
+
+    context "when an exception is raised after starting the fiber" do
+      define_test_with_exception!
+
+      def invoke
+        Xe::Context.current = Xe::Context.new({})
+        run_fiber
+        raise_exception
+      ensure
+        Xe::Context.clear_current
+      end
+    end
+
   end
 
   context "when waiting and dispatching (wrapped)" do
@@ -31,12 +77,8 @@ describe "Xe::Context - Garbage Collection" do
 
     def invoke
       Xe.context do
-        Fiber.new(&method(:fiber)).resume
+        run_fiber
       end
-    end
-
-    def fiber
-      realizer[1].to_i
     end
   end
 

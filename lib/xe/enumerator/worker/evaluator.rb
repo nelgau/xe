@@ -19,7 +19,7 @@ module Xe
 
         def proxy!
           context.proxy(@target) do
-            context.finalize
+            context.finalize!
             @result
           end
         end
