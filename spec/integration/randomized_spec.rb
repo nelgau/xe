@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Xe - Randomized Topology" do
+describe "Xe - Randomized" do
 
   let(:options) { {
     :max_fibers => 20
