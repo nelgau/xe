@@ -10,12 +10,6 @@ module Xe
           @tag = options[:tag]
         end
 
-        # Release all references to external objects, allowing them to be
-        # garbage-collected even if the enumeration instance outlives them.
-        def invalidate!
-          @enumerable = nil
-        end
-
         def inspect
           # Shorten the length of the class name to improve readability.
           last_const_name = self.class.name.split('::').last

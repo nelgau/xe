@@ -13,6 +13,17 @@ describe Xe::Proxy do
     Xe::Proxy.new { x }
   end
 
+  describe '.debug!' do
+
+    let(:subclass) { Class.new(Xe::Proxy) }
+
+    it "includes the Xe::Proxy::Debugging module" do
+      expect(subclass).to receive(:include).with(Xe::Proxy::Debugging)
+      subclass.debug!
+    end
+
+  end
+
   describe '.proxy?' do
 
     let(:object) { nil }

@@ -95,6 +95,10 @@ module Xe
         "updated_key: #{updated_keys.length}>"
       end
 
+      def to_s
+        inspect
+      end
+
       private
 
       # Reheap all updated events.

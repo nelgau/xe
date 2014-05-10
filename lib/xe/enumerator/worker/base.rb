@@ -10,8 +10,6 @@ module Xe
           raise NotImplementedError
         end
 
-        protected
-
         def context
           Context.current
         end

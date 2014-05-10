@@ -42,6 +42,19 @@ describe Xe::Heap do
     end
   end
 
+  describe '#initialize' do
+
+    context "when no comparator is given" do
+      subject { Xe::Heap.new }
+
+      it "sets a default comparator" do
+        expect(subject.compare).to_not be_nil
+      end
+
+    end
+
+  end
+
   describe '#each' do
 
     it "returns an enumerator" do
