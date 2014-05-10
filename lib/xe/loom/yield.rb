@@ -37,9 +37,8 @@ module Xe
       # Returns the depth of the current managed fiber, or zero if the current
       # is the root or unmanaged.
       def current_depth
-        # current = Loom::Fiber.current
-        # managed_fiber?(current) ? current.depth : 0
-        0
+        current = Fiber.current
+        managed_fiber?(current) ? current.depth : 0
       end
     end
   end

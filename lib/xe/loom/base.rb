@@ -1,27 +1,31 @@
 require 'fiber'
 
-ROOT_FIBER = ::Fiber.current
-
 module Xe
   module Loom
-    # The superclass of all loom exceptions.
-    class Error < StandardError; end
-
     # This class is responsible for creating managed fibers, suspending their
     # execution into keyed groups, and returning control to these groups by
     # resuming with a given value.
     class Base
-      attr_reader :waiters
+      # To protect ourselves from cyclic references, this set doesn't actually
+      # contain the set of running fibers, only their hashes, making it
+      # possibly to compute the number of running fibers without holding them.
       attr_reader :running
+      attr_reader :waiters
 
       def initialize
-        @waiters = {}
         @running = Set.new
+        @waiters = {}
+      end
+
+      def begin_fiber(&blk)
+        fiber = Fiber.new(self, current_depth + 1, &blk)
+        fiber.resume
+        fiber
       end
 
       # Returns true if the fiber is managed.
       def managed_fiber?(fiber)
-        ROOT_FIBER != fiber
+        fiber.is_a?(Loom::Fiber)
       end
 
       # Suspend the current fiber until the given key is released with a value.
@@ -77,13 +81,13 @@ module Xe
       # @protected
       # Adds the current fiber to the running set.
       def fiber_started!
-        # @running << ::Fiber.current
+        @running << Fiber.current.hash
       end
 
       # @protected
       # Removes the current fiber from the running set.
       def fiber_finished!
-        # @running.delete(::Fiber.current)
+        @running.delete(Fiber.current.hash)
       end
 
       def inspect

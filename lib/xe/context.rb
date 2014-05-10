@@ -172,9 +172,7 @@ module Xe
     def begin_fiber(&blk)
       # free_fibers unless can_run_fiber?
       trace(:fiber_new)
-      fiber = Loom::Fiber.new(&blk)
-      fiber.resume
-      fiber
+      loom.begin_fiber(&blk)
     end
 
     # @protected
