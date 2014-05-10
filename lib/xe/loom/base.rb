@@ -46,6 +46,11 @@ module Xe
         return
       end
 
+      # Returns true if any fibers are presently running.
+      def running?
+        running.any?
+      end
+
       # Returns true if any fibers are presently suspended.
       def waiters?
         waiters.any?
