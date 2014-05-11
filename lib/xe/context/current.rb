@@ -12,22 +12,17 @@ module Xe
 
       # Returns the current context for this thread, or nil if none exists.
       def current
-        all_contexts[current_thread_key]
+        all_contexts[Thread.current.object_id]
       end
 
       # Assigns a context instance to the current thread.
       def current=(context)
-        all_contexts[current_thread_key] = context
+        all_contexts[Thread.current.object_id] = context
       end
 
       # Clears the assigned context for the current thread.
       def clear_current
-        all_contexts.delete(current_thread_key)
-      end
-
-      # Returns a unique identifier for the current thead.
-      def current_thread_key
-        Thread.current.object_id
+        all_contexts.delete(Thread.current.object_id)
       end
     end
   end

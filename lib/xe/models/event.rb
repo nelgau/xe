@@ -2,6 +2,11 @@ module Xe
   class Event
     include Enumerable
 
+    # A unique identifier for events.
+    class Key < Struct.new(:deferrable, :group_key)
+      include ImmutableStruct
+    end
+
     attr_reader :deferrable
     attr_reader :group_key
     attr_reader :group
@@ -19,19 +24,19 @@ module Xe
 
     # Returns the event key for the given deferrable group.
     def self.key(deferrable, group_key)
-      [deferrable, group_key]
+      Key.new(deferrable, group_key)
     end
 
     # Retruns the event key for the given target.
     def self.target_key(target)
-      key(target.source, target.group_key)
+      Key.new(target.source, target.group_key)
     end
 
     def initialize(deferrable, group_key)
       @deferrable = deferrable
       @group_key = group_key
       @group = deferrable.new_group(group_key)
-      @key = Event.key(deferrable, group_key)
+      @key = Key.new(deferrable, group_key)
     end
 
     # Adds a single id to the event's group.

@@ -678,28 +678,10 @@ describe Xe::Context do
       subject.defer(deferrable, id, group_key)
     end
 
-    context "when the context is disabled" do
-      before do
-        options.merge!(:enabled => false)
-      end
-
-      it "raises Xe::DeferError" do
-        expect { invoke }.to raise_error(Xe::DeferError)
-      end
-    end
-
     context "when the context is invalid" do
       before do
         subject.invalidate!
       end
-
-      it "raises Xe::DeferError" do
-        expect { invoke }.to raise_error(Xe::DeferError)
-      end
-    end
-
-    context "when the deferrable isn't deferrable" do
-      let(:deferrable) { "aaa" }
 
       it "raises Xe::DeferError" do
         expect { invoke }.to raise_error(Xe::DeferError)

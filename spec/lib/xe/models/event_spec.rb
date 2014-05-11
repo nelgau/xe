@@ -44,15 +44,15 @@ describe Xe::Event do
 
   describe '.key' do
 
-    it "is an array" do
+    it "is an instance of Event::Key" do
       key = Xe::Event.key(deferrable, group_key)
-      expect(key).to be_an_instance_of(Array)
+      expect(key).to be_an_instance_of(Xe::Event::Key)
     end
 
     it "is a pair of deferrable and group_key" do
       key = Xe::Event.key(deferrable, group_key)
-      expect(key[0]).to eq(deferrable)
-      expect(key[1]).to eq(group_key)
+      expect(key.deferrable).to eq(deferrable)
+      expect(key.group_key).to eq(group_key)
     end
 
   end
@@ -62,9 +62,9 @@ describe Xe::Event do
     let(:source) { deferrable }
     let(:target) { Xe::Target.new(source, 0, group_key) }
 
-    it "is an array" do
+    it "is an instance of Event::Key" do
       key = Xe::Event.target_key(target)
-      expect(key).to be_an_instance_of(Array)
+      expect(key).to be_an_instance_of(Xe::Event::Key)
     end
 
     it "is a pair of deferrable and group_key" do
