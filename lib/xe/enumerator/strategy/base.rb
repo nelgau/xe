@@ -31,6 +31,14 @@ module Xe
         def call
           raise NotImplementedError
         end
+
+        def inspect
+          "#<#{self.class.name}>"
+        end
+
+        def to_s
+          inspect
+        end
       end
     end
   end
