@@ -81,6 +81,10 @@ module Xe
         (@perform_arity == 2) ? perform(group, key) : perform(group)
       end
 
+      def hash
+        @hash ||= super
+      end
+
       def inspect
         "#<#{self.class.name}>"
       end

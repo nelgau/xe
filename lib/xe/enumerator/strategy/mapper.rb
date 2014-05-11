@@ -6,6 +6,12 @@ module Xe
       # until it encounters a deferred realization and yields control. In its
       # place, the strategy creates a new fiber to pick up where the last left
       # off. Proxies are substituted for unrealized values.
+      #
+      # Profiling shows the mapper strategy is the hotest hot spot in the code.
+      # Its methods account for 40% of self time in the nested mapping
+      # benchmark. Eek. Steps were taken to reduce this. While this was a huge
+      # win for performance, it had the effect of making the code much harder
+      # to read. There ain't no such thing as a free lunch.
       class Mapper < Base
         attr_reader :enumerable
         attr_reader :results
@@ -100,7 +106,7 @@ module Xe
           # distinct target constructed from the instance and the index.
           target = Target.new(self, results.length)
           # Construct a new iterator, assign it to @last_iter and return it.
-          return (@last_iter = Iterator.new(object, target, false))
+          return (@last_iter = Iterator.new(object, target, false, false, nil))
         rescue StopIteration
           # (2) The enumeration is complete. Return a nil iterator.
           @done = true

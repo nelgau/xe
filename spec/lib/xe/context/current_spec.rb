@@ -57,7 +57,7 @@ describe Xe::Context::Current do
 
     it "assigns a value to the key of the current thread" do
       subject.current = context
-      key = subject.current_thread_key
+      key = Thread.current.object_id
       expect(subject.all_contexts[key]).to eq(context)
     end
   end
@@ -83,17 +83,9 @@ describe Xe::Context::Current do
       end
 
       it "deletes the key for the current thread" do
-        key = subject.current_thread_key
+        key = Thread.current.object_id
         expect(subject.all_contexts[key]).to eq(context)
       end
-    end
-
-  end
-
-  describe '.current_thread_key' do
-
-    it "is the object_id of the current thread" do
-      expect(subject.current_thread_key).to eq(Thread.current.object_id)
     end
 
   end

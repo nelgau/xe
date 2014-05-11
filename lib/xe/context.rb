@@ -81,18 +81,18 @@ module Xe
     # Iteratively realize all outstanding deferred values, event by event,
     # It will eventually release all waiting fibers (or deadlock).
     def finalize!
-      trace(:finalize_start)
+      trace(:finalize_start) if @tracer
       # Realize outstanding deferrals in the order given by the scheduler.
       until scheduler.empty?
         event = scheduler.next_event
-        trace(:finalize_step, event)
+        trace(:finalize_step, event) if @tracer
         realize_event(event)
       end
       # If fibers are still waiting (but there are no deferred targets in the
       # queue that could unblock them), then the game is over and we have
       # surely deadlocked.
       if loom.waiters?
-        trace(:finalize_deadlock)
+        trace(:finalize_deadlock) if @tracer
         raise DeadlockError
       end
     end
@@ -129,25 +129,22 @@ module Xe
     # methods without realizing it. However, invoking a method on it will
     # suspend the execution of the current managed fiber.
     def defer(deferrable, id, group_key=nil)
-      # Explicitly disallow deferred realization on disabled contexts. This
-      # case should be handled internally by the realizer base class.
-      raise DeferError, "Context is disabled"  if !enabled?
-      raise DeferError, "Context is invalid"   if !valid?
-      raise DeferError, "Value not deferrable" if !deferrable.is_a?(Deferrable)
+      # Disallow deferrals on invalid contexts.
+      raise DeferError, "Context is invalid" if !@valid
 
       target = Target.new(deferrable, id, group_key)
       # If this target was cached in a previous realization, return that value.
       if cache.has_key?(target)
-        trace(:value_cached, target)
+        trace(:value_cached, target) if @tracer
         return cache[target]
       end
 
       # Defer realization of the target. Add it to the scheduler's queue of
       # deferred targets and return a proxy instance in the place of a value.
-      trace(:value_deferred, target)
+      trace(:value_deferred, target) if @tracer
       scheduler.add_target(target)
       proxy(target) do
-        trace(:value_forced, target)
+        trace(:value_forced, target) if @tracer
         realize_target(target)
       end
     end
@@ -157,7 +154,7 @@ module Xe
     # are waiting on realization. Because targets don't contain unrealized
     # values, this will NEVER suspend the current fiber.
     def dispatch(target, value)
-      trace(:value_dispatched, target)
+      trace(:value_dispatched, target) if @tracer
       resolve(target, value)
       release(target, value)
     end
@@ -169,7 +166,7 @@ module Xe
     # dispatched. If no managed fiber is avilable (from which to yield), the
     # proxy calls force_proc and sets the return value as its subject.
     def proxy(target, &force_proc)
-      trace(:proxy_new, target)
+      trace(:proxy_new, target) if @tracer
       proxy = Proxy.new { wait(target, &force_proc) }
       (proxies[target] ||= []) << proxy
       proxy
@@ -182,7 +179,7 @@ module Xe
     def begin_fiber(&blk)
       # If we can't start anymore fibers, free some immediately.
       free_fibers if !can_begin_fiber?
-      trace(:fiber_new)
+      trace(:fiber_new) if @tracer
       fiber = loom.new_fiber(&blk)
       loom.run_fiber(fiber)
       fiber
@@ -197,7 +194,7 @@ module Xe
       # exhaust all events in the scheduler.
       until scheduler.empty?
         event = scheduler.next_event
-        trace(:fiber_free, event)
+        trace(:fiber_free, event) if @tracer
         realize_event(event)
         # As soon as a fiber is available, we're done.
         return if can_begin_fiber?
@@ -229,9 +226,9 @@ module Xe
     # to their associated target, releasing any waiting fibers. The value is
     # cached in the context so that further deferrals return immediately.
     def realize_event(event)
-      trace(:event_realize, event)
+      trace(:event_realize, event) if @tracer
       event.realize do |target, value|
-        trace(:value_realized, target)
+        trace(:value_realized, target) if @tracer
         cache[target] = value
         dispatch(target, value)
       end
@@ -242,7 +239,7 @@ module Xe
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
     def wait(target, &cantwait_proc)
-      trace(:fiber_wait, target)
+      trace(:fiber_wait, target) if @tracer
       scheduler.wait_target(target, loom.current_depth)
       loom.wait(target, &cantwait_proc)
     end
@@ -251,8 +248,7 @@ module Xe
     # Resume execution of fibers waiting on the target by passing the value
     # back as the result of the corresponding Context#wait invocation.
     def release(target, value)
-      count = loom.waiter_count(target)
-      trace(:fiber_release, target, count)
+      trace(:fiber_release, target, loom.waiter_count(target)) if @tracer
       loom.release(target, value)
     end
 
@@ -261,9 +257,12 @@ module Xe
     # subject. They will drop all references to the context.
     def resolve(target, value)
       target_proxies = proxies.delete(target)
-      trace(:proxy_resolve, target, target_proxies ? target_proxies.count : 0)
-      return if !target_proxies
-      target_proxies.each { |p| p.__set_subject(value) }
+      if target_proxies
+        trace(:proxy_resolve, target, target_proxies.count) if @tracer
+        target_proxies.each { |p| p.__set_subject(value) }
+      elsif @tracer
+        trace(:proxy_resolve, target, 0)
+      end
     end
 
     def invalidate_proxies!
