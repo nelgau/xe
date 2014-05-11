@@ -70,7 +70,7 @@ module Xe
                 # Each result value of the mapper is unique and is referenced by a
                 # distinct target constructed from the instance and the index.
                 target = Target.new(self, results.length)
-              rescue => e
+              rescue StopIteration
                 # (2) The enumeration is complete. Return a nil iterator.
                 @done = true
                 break
