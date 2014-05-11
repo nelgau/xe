@@ -75,16 +75,23 @@ module Xe
         # a few, very minor alterations.
         puts " %self      total      self      wait     child    calls  name"
         @methods.each do |m|
-          puts "%6.2f  %9.3f %9.3f %9.3f %9.3f %8d  %s" % [
-            m.self_percent,
-            m.total_time,
-            m.self_time,
-            m.wait_time,
-            m.children_time,
-            m.called,
-            m.name
-          ]
+          string = method_line(m)
+          is_xe_method = m.name =~ /Xe/
+          string = is_xe_method ? string.bold : string.blue
+          puts string
         end
+      end
+
+      def method_line(method)
+        "%6.2f  %9.3f %9.3f %9.3f %9.3f %8d  %s" % [
+          method.self_percent,
+          method.total_time,
+          method.self_time,
+          method.wait_time,
+          method.children_time,
+          method.called,
+          method.name
+        ]
       end
 
     end
