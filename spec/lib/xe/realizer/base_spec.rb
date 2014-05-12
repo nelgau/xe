@@ -155,16 +155,44 @@ describe Xe::Realizer::Base do
 
   end
 
+  describe '#transform' do
+
+    let(:group)   { [1, 2, 3] }
+    let(:results) { {} }
+
+    context "when results is a Hash" do
+      let(:results) { {1 => 4, 2 => 5, 3 => 6} }
+
+      it "returns the results unchanged" do
+        expect(subject.transform(group, results)).to eq(results)
+      end
+    end
+
+    context "when results is an Array" do
+      let(:results)  { [7, 8, 9] }
+      let(:expected) { {1 => 7, 2 => 8, 3 => 9} }
+
+      it "zips the group with the results and returns the pairs as a hash" do
+        expect(subject.transform(group, results)).to eq(expected)
+      end
+    end
+
+  end
+
   describe '#call' do
 
     let(:ids)   { [1, 2, 3] }
     let(:group) { Array.new(ids) }
     let(:key)   { 2 }
 
+    def invoke
+      subject.call(group, key)
+    end
+
     it "invokes #perform with the ids" do
       captured_ids = nil
       subject.stub(:perform) { |group| captured_ids = group }
-      subject.call(group, key)
+      invoke
       expect(captured_ids).to match_array(ids)
     end
 
@@ -180,16 +208,28 @@ describe Xe::Realizer::Base do
         it "invokes #perform with the ids" do
           captured_ids = nil
           subject.stub(:perform) { |group| captured_ids = group }
-          subject.call(group, key)
+          invoke
           expect(captured_ids).to match_array(ids)
         end
 
         it "invoke #perform after coercing the group to an array" do
           captured_ids = nil
           subject.stub(:perform) { |group| captured_ids = group }
-          subject.call(group, key)
+          invoke
           expect(captured_ids).to be_an_instance_of(Array)
         end
+      end
+    end
+
+    context "when perform/transform something other than a Hash" do
+      let(:object) { double("An Object") }
+
+      before do
+        subject.stub(:perform) { object }
+      end
+
+      it "raises UnsupportedRealizationTypeError" do
+        expect { invoke }.to raise_error(Xe::UnsupportedRealizationTypeError)
       end
     end
 

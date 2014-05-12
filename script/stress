@@ -7,6 +7,6 @@ $:.push File.expand_path("../../spec", __FILE__)
 
 require 'xe'
 require 'xe/benchmark'
-require 'xe/profiler'
+require 'xe/stress'
 
-Xe::Profile::Profiler.()
+Xe::Profile::Stress.()

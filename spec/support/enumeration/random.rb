@@ -43,7 +43,7 @@ module Xe::Test
       private
 
       def construct_unit(depth=1)
-        realizer = Xe::Test::Realizer.all.sample
+        realizer = Xe::Test::Realizer.generic.sample
         enum = construct_enum(depth - 1)
         Unit.new(realizer, enum)
       end

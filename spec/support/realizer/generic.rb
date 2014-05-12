@@ -1,0 +1,5 @@
+require 'support/realizer/generic/type_int_to_str'
+require 'support/realizer/generic/type_str_to_int'
+require 'support/realizer/generic/increment'
+require 'support/realizer/generic/multiply'
+require 'support/realizer/generic/concatenate'

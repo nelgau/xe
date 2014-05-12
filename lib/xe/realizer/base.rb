@@ -32,7 +32,7 @@ module Xe
         id = Proxy.resolve(id)
         key ||= group_key(id)
         # If an active context is available, defer the evaluation of this id.
-        # Otherwise, realize the value immediately.
+        # Otherwise, realize the value immediately, individually and serially.
         current = Context.current
         current && current.enabled? ?
           current.defer(self, id, key) :
@@ -42,13 +42,14 @@ module Xe
       # Override these methods to implement a realizer.
 
       # Override this method to provide a batch loader.
-      # Returns a map from ids to values. By default, the realizer group is
+      # Returns either 1) a map from ids to values, or 2) an array of values
+      # (in the same order as the group). By default, the realizer group is
       # coerced to an array before invoking. If you wish to preserve the
       # type of the group instance (as returned by the #new_group method), you
       # can override the #group_as_array method to return `false`. If your
       # realizer subclass doesn't group ids by key, you may define #perform
       # to take a single argument (the group enumerable).
-      def perform(group, key)
+      def perform(group, key=nil)
         raise NotImplementedError
       end
 
@@ -70,18 +71,36 @@ module Xe
         true
       end
 
-      # This method is overriden in subclasses to customize the sematics of
-      # the #perform method. The default implementation is pass-through.
+      # Take the value returned by #perform and transform it into a hash from
+      # ids to values (if it's not already in that form). If the results are
+      # neither an array nor a hash, raise an error. This method can be
+      # overriden to customize the behavior of subclasses.
+      def transform(group, results)
+        results.is_a?(Array) ?
+          zip_results(group, results) :
+          results
+      end
+
+      # @protected
+      # Realize a group of ids as a hash from ids to values. This is the
+      # designated entry point for realization via the context.
       def call(group, key=nil)
         # Optionally coerce the group to an array.
         group = group.to_a if group_as_array?
-        # Support overridden #perform implementations with both signatures.
+        # Support overridden #perform implementations with either signature.
         # Not all realizers require grouping and for some use cases, the
         # argument might be confusing.
         @perform_arity ||= method(:perform).arity
-        (@perform_arity == 2) ? perform(group, key) : perform(group)
+        results = (@perform_arity == 2) ? perform(group, key) : perform(group)
+        # Apply post-processing to the result set.
+        results = transform(group, results)
+        # The client of this method only supports maps, raise otherwise.
+        raise UnsupportedRealizationTypeError if !results.is_a?(Hash)
+        results
       end
 
+      # Memoize the hash. This value is used to computie the hash of target.
+      # Profiling shows that this is a small, but significant win.
       def hash
         @hash ||= super
       end
@@ -92,6 +111,17 @@ module Xe
 
       def to_s
         inspect
+      end
+
+      protected
+
+      # Assumes that the results were returned in the enumeration order of the
+      # group argument. Zips both together and constructs a hash.
+      def zip_results(group, results_array)
+        pairs = group.zip(results_array)
+        pairs.each_with_object({}) do |(id, value), rs|
+          rs[id] = value
+        end
       end
     end
   end
