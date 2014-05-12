@@ -4,6 +4,8 @@ module Xe
 
   # Raised when attempting to enumerate outside of an active context.
   class NoContextError < Error; end
+  # Raised when an operation is attempted against an invalid context.
+  class InvalidContextError < Error; end
   # Raised when an inconsistent state is detected during context invalidation.
   class InconsistentContextError < Error; end
   # Raised when there are waiting fibers but no values left to realize.

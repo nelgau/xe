@@ -31,15 +31,6 @@ describe Xe::Event do
       end
     end
 
-    context "when the target's source isn't a deferrable" do
-      let(:source) { double('Not Deferrable') }
-
-      it "raises Xe::DeferError" do
-        expect { Xe::Event.from_target(target) }.to raise_error(Xe::DeferError)
-      end
-
-    end
-
   end
 
   describe '.key' do

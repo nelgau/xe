@@ -118,10 +118,9 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
-
       release_all_fibers!
       invalidate_proxies!
-
+    ensure
       # Not strictly necessary. But let's help the GC out.
       @policy = nil
       @loom = nil
@@ -138,7 +137,8 @@ module Xe
     # suspend the execution of the current managed fiber.
     def defer(deferrable, id, group_key=nil)
       # Disallow deferrals on invalid contexts.
-      raise DeferError, "Context is invalid" if !@valid
+      raise InvalidContextError if !@valid
+      raise DeferError if !deferrable.is_a?(Deferrable)
 
       target = Target.new(deferrable, id, group_key)
       # If this target was cached in a previous realization, return that value.
@@ -272,8 +272,7 @@ module Xe
       trace(:fiber_wait, target) if @tracer
       scheduler.wait_target(target, loom.current_depth)
       result = loom.wait(target, &cantwait_proc)
-      # If the context is no longer valid, raise an exception now.
-      raise InvalidContextError if !@valid
+      raise Xe::InvalidContextError if !@valid
       result
     end
 

@@ -50,6 +50,54 @@ describe Xe::Loom::Yield do
 
   end
 
+  describe '#clear' do
+
+    context "when there are no waiters" do
+      it "is a no-op" do
+        subject.clear
+      end
+    end
+
+    context "when there is a fiber waiting on the given key" do
+      let(:out) { {} }
+
+      before do
+        subject.run_fiber(wait_fiber, out)
+      end
+
+      it "returns control to the fiber with nil" do
+        subject.clear
+        expect(out[:value]).to eq(nil)
+      end
+
+      context "when the fiber raises an error after resuming" do
+        let(:error_class) { Xe::Test::Error }
+
+        let(:wait_fiber) do
+          subject.new_fiber do |out|
+            out[:value] = subject.wait('a')
+            raise error_class
+          end
+        end
+
+        context "when the error is Xe::InconsistentContextError" do
+          let(:error_class) { Xe::InconsistentContextError }
+
+          it "doesn't raise an error" do
+            subject.clear
+          end
+
+          it "returns control to the fiber with nil" do
+            subject.clear
+            expect(out[:value]).to eq(nil)
+          end
+        end
+
+      end
+    end
+
+  end
+
   describe '#current_depth' do
 
     context "when the current fiber is unmanaged" do

@@ -703,8 +703,8 @@ describe Xe::Context do
         subject.invalidate!
       end
 
-      it "raises Xe::DeferError" do
-        expect { invoke }.to raise_error(Xe::DeferError)
+      it "raises Xe::InvalidContextError" do
+        expect { invoke }.to raise_error(Xe::InvalidContextError)
       end
     end
 

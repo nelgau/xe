@@ -150,6 +150,14 @@ describe Xe::Loom::Base do
 
   end
 
+  describe '#clear' do
+
+    it "is a no-op" do
+      subject.clear
+    end
+
+  end
+
   describe '#running?' do
 
     context "when there are no running fibers" do
