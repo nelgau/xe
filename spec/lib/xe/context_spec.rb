@@ -1487,6 +1487,10 @@ describe Xe::Context do
     end
 
     context "when the context is invalid" do
+      before do
+        subject.invalidate!
+      end
+
       it "is a string" do
         expect(subject.inspect).to be_an_instance_of(String)
       end
