@@ -13,13 +13,16 @@ module Xe
       # Strategies must avoid using the 'liveness' property (alive?) of fibers
       # as the context may choose to keep fibers in a pool so that they live
       # beyond the execution of the entry point.
+      #
+      # As for formal matter, strategies are limited to calling the following
+      # methods on the context: #begin_fiber, #dispatch, #proxy, #finalize!
       class Base
+        attr_reader :context
+
         # Constructs a new instance of the strategy and invokes it.
         def self.call(*args, &blk)
           new(*args, &blk).call
         end
-
-        attr_reader :context
 
         def initialize(context)
           @context = context

@@ -7,6 +7,10 @@ module Xe
       # place, the strategy creates a new fiber to pick up where the last left
       # off. Proxies are substituted for unrealized values.
       class Mapper < Base
+        attr_reader :enumerable
+        attr_reader :map_proc
+        attr_reader :results
+
         def initialize(context, enumerable, &map_proc)
           super(context)
           raise ArgumentError, "No block given" unless block_given?
@@ -23,11 +27,14 @@ module Xe
         # blocks, a proxy object is returned in place of a value.
         def call
           # If we haven't exhausted the enumerable, begin a new fiber.
-          next_fiber until done?
+          advance until done?
           @results
         end
 
-        private
+        # Returns true when enumeration is complete.
+        def done?
+          @done
+        end
 
         # Begin a new consumer fiber. Each fiber is responsible for either:
         #
@@ -39,7 +46,7 @@ module Xe
         # proxy. Upon resuming, the fiber cannot complete any more iterations
         # because the strategy isn't guaranteed be its parent fiber. The fiber
         # detects this condition with the did_proxy attribute and terminates.
-        def next_fiber
+        def advance
           # Initialize local state. These instance variables will be shared
           # only with the fiber created in this scope and it alone.
           object = index = target = value = nil
@@ -48,7 +55,7 @@ module Xe
           # Greedily consume objects from the enumerable until we run out, or
           # we know that evaluating the iterator blocked and substituted a
           # proxy. Start execution in the fiber at (1).
-          context.begin_fiber do
+          @context.begin_fiber do
             # (1) Iterate until we run out of objects. Each iteration will add
             # a new object to the results by either #emit_value or #emit_proxy.
             loop do
@@ -61,9 +68,6 @@ module Xe
                 # objects left, it raises StopIteration and proceeds to (2).
                 object = @consumer.next
                 index  = @results.length
-                # Each result value of the mapper is unique and is referenced
-                # by a target constructed from the instance and the index.
-                target = Target.new(self, index)
               rescue StopIteration
                 # (2) The enumeration is complete. Return from the fiber.
                 @done = true
@@ -82,15 +86,15 @@ module Xe
               if did_proxy
                 # We returned a proxy to the result. Dispatch the computed
                 # value to the context. This resolves the proxy and releases
-                # any fibers blocked on it.
-                context.dispatch(target, value)
+                # any fibers blocked on it. Target will be assigned below.
+                @context.dispatch(target, value)
                 # This fiber has completed its responsibilities and another
                 # fiber has continued the enumeration. Terminate immediately.
                 break
               else
                 # Since we didn't emit a proxy, we're responsible for
                 # appending the new value to the results.
-                @results << value if !did_proxy
+                @results << value
               end
             end
           end
@@ -104,23 +108,21 @@ module Xe
           if !has_value
             # Record that we substituted a proxy.
             did_proxy = true
+            # Each result value of the mapper is unique and is referenced
+            # by a target constructed from the instance and the index.
+            target = Target.new(self, index)
             # Returns a proxy to the result of the given iterator. If an
             # attempt is made to resolve the subject outside of a managed
             # fiber, the strategy will call the context to finalize all
             # outstanding events, releasing the dependency on the strategy's
             # fiber. After finalizing, the value must be available, so return
             # it as the subject.
-            @results << context.proxy(target) do
-              context.finalize!
+            @results << @context.proxy(target) do
+              @context.finalize!
               # The proxy accepts the returned value as its resolved subject.
               value
             end
           end
-        end
-
-        # Returns true when enumeration is complete.
-        def done?
-          @done
         end
       end
     end

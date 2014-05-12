@@ -5,6 +5,8 @@ module Xe
       # the computation blocks on the realization of a value, the strategy's
       # run method returns a proxy object.
       class Evaluator < Base
+        attr_reader :value_proc
+
         def initialize(context, &value_proc)
           super(context)
           raise ArgumentError, "No block given" unless block_given?
@@ -14,14 +16,11 @@ module Xe
         # Evaluates value_proc within a single fiber and returns the value as
         # the result. If the computation blocks, a proxy object is returned.
         def call
-          # Each instance of the evaluator strategy is unique. The result is
-          # referenced by a distinct target constructed from the instance.
-          target = Target.new(self)
-          value = nil
+          target = value = nil
           has_value = did_proxy = false
 
           # Begin a new fiber and transfer control to (1).
-          context.begin_fiber do
+          @context.begin_fiber do
             # (1) Evaluate value_proc with call. If the proc attempts to realize
             # a deferred value, the invocation will not return immediately and
             # instead transfer control to (2).
@@ -35,7 +34,7 @@ module Xe
               # We returned a proxy to the result. Dispatch the computed
               # value to the context. This resolves the proxy and releases
               # any fibers blocked on it.
-              context.dispatch(target, value)
+              @context.dispatch(target, value)
             end
           end
 
@@ -46,13 +45,18 @@ module Xe
             # Record that we substituted a proxy.
             did_proxy = true
 
+            # Each instance of the evaluator strategy is unique. The result is
+            # referenced by a distinct target constructed from the instance.
+            # This is constructed only when we need to refer to the result.
+            target = Target.new(self)
+
             # Returns a proxy to the strategy's result. If an attempt is made
             # to resolve the subject outside of a fiber, the strategy will call
             # to finalize the context and all outstanding events, releasing the
             # dependency on the strategy's fiber. After finalizing, the value
             # must be available, so return it as the subject.
-            context.proxy(target) do
-              context.finalize!
+            @context.proxy(target) do
+              @context.finalize!
               # The proxy accepts the returned value as its resolved subject.
               value
             end

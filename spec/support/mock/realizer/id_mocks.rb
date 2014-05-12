@@ -2,7 +2,6 @@ module Xe::Test
   module Mock
     module Realizer
       module Id
-
         def new_value_mock(id)
           Value.new(id)
         end
@@ -16,7 +15,6 @@ module Xe::Test
             @id2 = id + 1
           end
         end
-
       end
     end
   end
