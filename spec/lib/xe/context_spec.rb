@@ -1374,6 +1374,36 @@ describe Xe::Context do
 
   end
 
+  describe '#release_all_fibers!' do
+
+    context "when no fibers are waiting" do
+      it "is a no-op" do
+        subject.release_all_fibers!
+      end
+    end
+
+    context "when there are waiting fibers" do
+      let(:fiber_count) { 2 }
+
+      before do
+        @fibers = (0...fiber_count).map do |i|
+          subject.begin_fiber do
+            subject.wait(target) do
+              # This should never happen.
+              raise Xe::Test::Error
+            end
+          end
+        end
+      end
+
+      it "releases all fibers" do
+        subject.release_all_fibers!
+        @fibers.each { |f| expect(f).to_not be_alive }
+      end
+    end
+
+  end
+
   describe '#invalidate_proxies!' do
 
     context "when the context has no proxies" do
@@ -1430,8 +1460,16 @@ describe Xe::Context do
 
   describe '#inspect' do
 
-    it "is a string" do
-      expect(subject.inspect).to be_an_instance_of(String)
+    context "when the context is valid" do
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
+    end
+
+    context "when the context is invalid" do
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
     end
 
   end

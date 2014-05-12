@@ -117,7 +117,7 @@ module Xe
     def invalidate!
       @valid = false
 
-      wake_all_fibers!
+      release_all_fibers!
       invalidate_proxies!
 
       # Not strictly necessary. But let's help the GC out.
@@ -277,7 +277,7 @@ module Xe
     # Release all fibers. This is called as the first step during invalidation
     # after marking the context invalid. It causes an InvalidContextError to be
     # raised in any waiting fibers. See `Context#wait`.
-    def wake_all_fibers!
+    def release_all_fibers!
       loom.clear
     end
 
