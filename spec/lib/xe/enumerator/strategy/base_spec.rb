@@ -15,14 +15,14 @@ describe Xe::Enumerator::Strategy::Base do
     end
 
     it "creates an instance of the strategy" do
-      expect(klass).to receive(:new).with(context_mock) { instance }
+      expect(klass).to receive(:new).with(context_mock, 1, 2, 3) { instance }
       klass.call(context_mock, 1, 2, 3)
     end
 
     it "invokes call on the instance" do
       klass.stub(:new).and_return(instance)
-      expect(instance).to receive(:call).with(1, 2, 3)
-      klass.call(context_mock, 1, 2, 3)
+      expect(instance).to receive(:call)
+      klass.call(context_mock)
     end
   end
 

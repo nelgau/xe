@@ -16,10 +16,8 @@ module Xe
         attr_reader :enumerable
         attr_reader :results
 
-        # Evaluates map_proc over the enumerable within a succession of fibers
-        # and returns an array of results. If any invocation of map_proc
-        # blocks, a proxy object is returned in place of a value.
-        def call(enumerable, &map_proc)
+        def initialize(context, enumerable, &map_proc)
+          super(context)
           raise ArgumentError, "No block given" unless block_given?
           @enumerable = enumerable
           @map_proc = map_proc
@@ -27,19 +25,15 @@ module Xe
           @consumer = ::Enumerator.new(enumerable)
           @results = []
           @done = false
+        end
 
+        # Evaluates map_proc over the enumerable within a succession of fibers
+        # and returns an array of results. If any invocation of map_proc
+        # blocks, a proxy object is returned in place of a value.
+        def call
           # If we haven't exhausted the enumerable, begin a new fiber.
           next_fiber until done?
           @results
-
-        rescue => e
-          @context = nil
-          @results = nil
-          raise e
-        ensure
-          @enumerable = nil
-          @map_proc = nil
-          @consumer = nil
         end
 
         private
@@ -56,45 +50,43 @@ module Xe
         # detects this condition with the did_proxy attribute and terminates.
         def next_fiber
           # Initialize local state. These instance variables will be shared
-          # with the fiber created in this scope and it alone.
+          # only with the fiber created in this scope and it alone.
           object = index = target = value = nil
           has_value = did_proxy = false
 
-          # Start execution in the fiber at (1).
+          # Greedily consume objects from the enumerable until we run out, or
+          # we know that evaluating the iterator blocked and substituted a
+          # proxy. Start execution in the fiber at (1).
           context.begin_fiber do
-
-            # Greedily consume objects from the enumerable until we run out, or
-            # we know that evaluating the iterator blocked and substituted a proxy.
-
-            # (1) Iterate until we run out of objects. Each iteration will add a
-            # new object to the results by either #emit_value or #emit_proxy.
+            # (1) Iterate until we run out of objects. Each iteration will add
+            # a new object to the results by either #emit_value or #emit_proxy.
             loop do
+              # Reset the state for the next iteration.
+              has_value = false
+              did_proxy = false
 
               begin
-                # Consume a new object from the enumerable. If there are no elements
-                # remaining, it raises StopIteration and proceeds to (2).
+                # Consume a new object from the enumerable. If there are no
+                # objects left, it raises StopIteration and proceeds to (2).
                 object = @consumer.next
                 index  = results.length
-                # Each result value of the mapper is unique and is referenced by a
-                # distinct target constructed from the instance and the index.
+                # Each result value of the mapper is unique and is referenced
+                # by a target constructed from the instance and the index.
                 target = Target.new(self, index)
               rescue StopIteration
-                # (2) The enumeration is complete. Return a nil iterator.
+                # (2) The enumeration is complete. Return from the fiber.
                 @done = true
                 break
               end
 
-              has_value = false
-              did_proxy = false
-
               # Evaluate map_proc with call. If the proc attempts to realize
-              # a deferred value, the invocation will not return immediately and
-              # instead transfer control to (3).
+              # a deferred value, the invocation will not return immediately
+              # and instead transfer control to (3).
               value = @map_proc.call(object)
               has_value = true
 
-              # (4) After reaching here, it might be the case that we returned a
-              # proxy to the result. Just saying.
+              # (4) After reaching here, it might be the case that we returned
+              # a proxy to the result. Just saying.
 
               # If the parent fiber didn't emit a proxy, we're responsible for
               # appending the new value to the results.
@@ -102,14 +94,14 @@ module Xe
 
               # It might be the case that we returned a proxy to the result. We
               # should know this from did_proxy. However, for transparency and
-              # consistency, we always dispatch the computed value to the context.
-              # This resolves the proxy, releases any fibers blocked on it and
-              # allows us to trace the event.
+              # consistency, we always dispatch the computed value to the
+              # context. This resolves the proxy, releases any fibers blocked
+              # on it and allows us to trace the realization.
               context.dispatch(target, value)
 
               # If we proxied the last iteration, this fiber has completed its
-              # responsibilities and another fiber has continued the enumeration.
-              # If this is case, terminate immediately.
+              # responsibilities and another fiber has continued the
+              # enumeration. If this is case, terminate immediately.
               break if did_proxy
             end
           end
@@ -121,13 +113,14 @@ module Xe
           # emit a proxy for the result. In that case, after realization,
           # control will return to (4).
           if !has_value
-            # Substitutes a proxy for the given iterator.
+            # Record that we substituted a proxy.
             did_proxy = true
-
-            # Returns a proxy to the result of the given iterator. If an attempt is
-            # made to resolve the subject outside of a managed fiber, the strategy
-            # will call the context to finalize all outstanding events, releasing
-            # the dependency on the strategy's fiber. After finalizing, the value
+            # Returns a proxy to the result of the given iterator. If an
+            # attempt is made to resolve the subject outside of a managed
+            # fiber, the strategy will call the context to finalize all
+            # outstanding events, releasing the dependency on the strategy's
+            # fiber. After finalizing, the value must be available, so return
+            # it as the subject.
             results << context.proxy(target) do
               context.finalize!
               # The proxy accepts the returned value as its resolved subject.
