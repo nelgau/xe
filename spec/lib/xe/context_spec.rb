@@ -394,6 +394,47 @@ describe Xe::Context do
 
   end
 
+  describe '#enabled?' do
+    let(:enabled) { true }
+
+    before do
+      options.merge!(:enabled => enabled)
+    end
+
+    context "when the context is enabled" do
+      let(:enabled) { true }
+
+      it "is true" do
+        expect(subject).to be_enabled
+      end
+    end
+
+    context "when the context is disabled" do
+      let(:enabled) { false }
+
+      it "is false" do
+        expect(subject).to_not be_enabled
+      end
+    end
+  end
+
+  describe '#valid?' do
+
+    context "before invalidation" do
+      it "is true" do
+        expect(subject).to be_valid
+      end
+    end
+
+    context "after invalidation" do
+      it "is false" do
+        subject.invalidate!
+        expect(subject).to_not be_valid
+      end
+    end
+
+  end
+
   describe '#finalize!' do
 
     context "when there are no events in the scheduler" do
@@ -582,47 +623,6 @@ describe Xe::Context do
 
   end
 
-  describe '#enabled?' do
-    let(:enabled) { true }
-
-    before do
-      options.merge!(:enabled => enabled)
-    end
-
-    context "when the context is enabled" do
-      let(:enabled) { true }
-
-      it "is true" do
-        expect(subject).to be_enabled
-      end
-    end
-
-    context "when the context is disabled" do
-      let(:enabled) { false }
-
-      it "is false" do
-        expect(subject).to_not be_enabled
-      end
-    end
-  end
-
-  describe '#valid?' do
-
-    context "before invalidation" do
-      it "is true" do
-        expect(subject).to be_valid
-      end
-    end
-
-    context "after invalidation" do
-      it "is false" do
-        subject.invalidate!
-        expect(subject).to_not be_valid
-      end
-    end
-
-  end
-
   describe '#invalidate!' do
 
     it "marks the context as no longer valid" do
@@ -800,6 +800,109 @@ describe Xe::Context do
 
   end
 
+  describe '#realize_target' do
+
+    def invoke
+      subject.realize_target(target)
+    end
+
+    context "when the target doesn't refer to an event in the scheduler" do
+      it "raises Xe::InconsistentContextError" do
+        expect { invoke }.to raise_error(Xe::InconsistentContextError)
+      end
+    end
+
+    context "when the target refers to an event in the scheduler" do
+      before do
+        # Two events.
+        @proxy1 = subject.defer(*target.to_a)
+        @proxy2 = subject.defer(realizers[1], 1, 'b')
+      end
+
+      it "realizes the referenced event" do
+        event_key = Xe::Event.target_key(target)
+        event = subject.scheduler.events[event_key]
+        subject.should_receive(:realize_event).with(event).and_call_original
+        invoke
+      end
+
+      it "resolves the proxy" do
+        invoke
+        expect(@proxy1.__resolved?).to be_true
+      end
+
+      it "removes the event from the scheduler" do
+        invoke
+        expect(subject.scheduler.events[target]).to be_nil
+      end
+    end
+
+  end
+
+  describe '#realize_event' do
+
+    let(:proxy_count) { 10 }
+
+    before do
+      # These should be realized by a single event.
+      @proxies = (0...proxy_count).map do |i|
+        subject.defer(deferrable, i, 'a')
+      end
+      # Namely, this one...
+      @event = subject.scheduler.events.values.flatten.first
+    end
+
+    def invoke
+      subject.realize_event(@event)
+    end
+
+    it "returns a hash of realized values (by id)" do
+      results = invoke
+      (0...proxy_count).each do |i|
+        value = deferrable.value_for_id(i)
+        expect(results[i]).to eq(value)
+      end
+    end
+
+    it "dispatches values" do
+      dispatched_values = {}
+      subject.stub(:dispatch) { |t, v| dispatched_values[t] = v }
+      invoke
+      @event.targets.each do |t|
+        value = deferrable.value_for_id(t.id)
+        expect(dispatched_values[t]).to eq(value)
+      end
+    end
+
+    it "caches values" do
+      invoke
+      @event.targets.each do |t|
+        value = deferrable.value_for_id(t.id)
+        expect(subject.cache[t]).to eq(value)
+      end
+    end
+
+    it "resolves the proxies" do
+      invoke
+      @proxies.each do |proxy|
+        expect(proxy.__resolved?).to be_true
+      end
+    end
+
+    it "emits 'event_realize' with the event" do
+      expect(tracer).to receive(:event_realize).with(@event)
+      invoke
+    end
+
+    it "emits 'value_realized' with each target" do
+      emitted_targets = []
+      tracer.stub(:value_realized) { |t| emitted_targets << t }
+      invoke
+      expect(emitted_targets).to eq(@event.targets)
+    end
+
+  end
+
   describe '#dispatch' do
 
     let(:value) { 2 }
@@ -913,6 +1016,136 @@ describe Xe::Context do
       it "adds the fiber to the waiters for that target" do
         fiber = subject.begin_fiber { @proxy.to_i }
         expect(subject.loom.waiters[target]).to eq([fiber])
+      end
+    end
+
+  end
+
+  describe '#resolve' do
+
+    let(:value) { 4 }
+
+    def invoke
+      subject.resolve(target, value)
+    end
+
+    context "when there are no proxies for the target" do
+      it "is a no-op" do
+        invoke
+      end
+    end
+
+    context "when there is a proxy for the target" do
+      before do
+        @proxy = subject.proxy(target) do
+          # This should never happen.
+          raise Xe::Test::Error
+        end
+      end
+
+      it "resolves the proxy" do
+        invoke
+        expect(@proxy.__resolved?).to be_true
+      end
+
+      it "resolves the proxy with a value" do
+        invoke
+        expect(@proxy.__value?).to be_true
+      end
+
+      it "invalidates the proxy" do
+        invoke
+        expect(@proxy.__valid?).to be_false
+      end
+
+      it "sets the correct value as the proxy's subject" do
+        invoke
+        expect(@proxy.__subject).to eq(value)
+      end
+
+      it "emits 'proxy_resolve' with a target and count" do
+        expect(tracer).to receive(:proxy_resolve) do |_target, _count|
+          expect(_target).to eq(target)
+          expect(_count).to eq(1)
+        end
+        invoke
+      end
+
+      context "when the value is itself a proxy" do
+        let(:target2) { Xe::Target.new(realizers[2], 0, 'b') }
+        let(:value2) { 4 }
+
+        let(:value) { @proxy2 }
+
+        before do
+          @proxy2 = subject.proxy(target2) { value2 }
+        end
+
+        it "resolves the proxy" do
+          invoke
+          expect(@proxy.__resolved?).to be_true
+        end
+
+        it "resolves the proxy with a proxy" do
+          invoke
+          expect(@proxy.__value?).to be_false
+        end
+
+        it "invalidates the proxy" do
+          invoke
+          expect(@proxy.__valid?).to be_false
+        end
+
+        it "sets the correct value as the proxy's subject" do
+          invoke
+          # Compare the proxies by their lazy-assigned id.
+          expect(@proxy.__subject.__proxy_id).to eql(@proxy2.__proxy_id)
+        end
+
+        context "after resolving the subjects" do
+          before do
+            invoke
+            @proxy.to_i
+            @proxy2.to_i
+          end
+
+          it "has the value of the second" do
+            expect(@proxy.to_i).to eq(@proxy2.to_i)
+          end
+
+          it "has memoized the value of the second in the first" do
+            expect(@proxy.__value?).to be_true
+          end
+        end
+      end
+    end
+
+  end
+
+  describe '#invalidate_proxies!' do
+
+    context "when the context has no proxies" do
+      it "is a no-op" do
+        subject.invalidate_proxies!
+      end
+    end
+
+    context "when the context has proxies" do
+      before do
+        @proxies = realizers.map do |realizer|
+          target = Xe::Target.new(realizer, 0, 'a')
+          subject.proxy(target) do
+            # This should never happen.
+            raise Xe::Test::Error
+          end
+        end
+      end
+
+      it "invalidates the proxies" do
+        subject.invalidate_proxies!
+        @proxies.each do |proxy|
+          expect(proxy.__valid?).to be_false
+        end
       end
     end
 
@@ -1101,109 +1334,6 @@ describe Xe::Context do
 
   end
 
-  describe '#realize_target' do
-
-    def invoke
-      subject.realize_target(target)
-    end
-
-    context "when the target doesn't refer to an event in the scheduler" do
-      it "raises Xe::InconsistentContextError" do
-        expect { invoke }.to raise_error(Xe::InconsistentContextError)
-      end
-    end
-
-    context "when the target refers to an event in the scheduler" do
-      before do
-        # Two events.
-        @proxy1 = subject.defer(*target.to_a)
-        @proxy2 = subject.defer(realizers[1], 1, 'b')
-      end
-
-      it "realizes the referenced event" do
-        event_key = Xe::Event.target_key(target)
-        event = subject.scheduler.events[event_key]
-        subject.should_receive(:realize_event).with(event).and_call_original
-        invoke
-      end
-
-      it "resolves the proxy" do
-        invoke
-        expect(@proxy1.__resolved?).to be_true
-      end
-
-      it "removes the event from the scheduler" do
-        invoke
-        expect(subject.scheduler.events[target]).to be_nil
-      end
-    end
-
-  end
-
-  describe '#realize_event' do
-
-    let(:proxy_count) { 10 }
-
-    before do
-      # These should be realized by a single event.
-      @proxies = (0...proxy_count).map do |i|
-        subject.defer(deferrable, i, 'a')
-      end
-      # Namely, this one...
-      @event = subject.scheduler.events.values.flatten.first
-    end
-
-    def invoke
-      subject.realize_event(@event)
-    end
-
-    it "returns a hash of realized values (by id)" do
-      results = invoke
-      (0...proxy_count).each do |i|
-        value = deferrable.value_for_id(i)
-        expect(results[i]).to eq(value)
-      end
-    end
-
-    it "dispatches values" do
-      dispatched_values = {}
-      subject.stub(:dispatch) { |t, v| dispatched_values[t] = v }
-      invoke
-      @event.targets.each do |t|
-        value = deferrable.value_for_id(t.id)
-        expect(dispatched_values[t]).to eq(value)
-      end
-    end
-
-    it "caches values" do
-      invoke
-      @event.targets.each do |t|
-        value = deferrable.value_for_id(t.id)
-        expect(subject.cache[t]).to eq(value)
-      end
-    end
-
-    it "resolves the proxies" do
-      invoke
-      @proxies.each do |proxy|
-        expect(proxy.__resolved?).to be_true
-      end
-    end
-
-    it "emits 'event_realize' with the event" do
-      expect(tracer).to receive(:event_realize).with(@event)
-      invoke
-    end
-
-    it "emits 'value_realized' with each target" do
-      emitted_targets = []
-      tracer.stub(:value_realized) { |t| emitted_targets << t }
-      invoke
-      expect(emitted_targets).to eq(@event.targets)
-    end
-
-  end
-
   describe '#wait' do
 
     context "when invoked outside of a managed fiber" do
@@ -1293,107 +1423,6 @@ describe Xe::Context do
 
   end
 
-  describe '#resolve' do
-
-    let(:value) { 4 }
-
-    def invoke
-      subject.resolve(target, value)
-    end
-
-    context "when there are no proxies for the target" do
-      it "is a no-op" do
-        invoke
-      end
-    end
-
-    context "when there is a proxy for the target" do
-      before do
-        @proxy = subject.proxy(target) do
-          # This should never happen.
-          raise Xe::Test::Error
-        end
-      end
-
-      it "resolves the proxy" do
-        invoke
-        expect(@proxy.__resolved?).to be_true
-      end
-
-      it "resolves the proxy with a value" do
-        invoke
-        expect(@proxy.__value?).to be_true
-      end
-
-      it "invalidates the proxy" do
-        invoke
-        expect(@proxy.__valid?).to be_false
-      end
-
-      it "sets the correct value as the proxy's subject" do
-        invoke
-        expect(@proxy.__subject).to eq(value)
-      end
-
-      it "emits 'proxy_resolve' with a target and count" do
-        expect(tracer).to receive(:proxy_resolve) do |_target, _count|
-          expect(_target).to eq(target)
-          expect(_count).to eq(1)
-        end
-        invoke
-      end
-
-      context "when the value is itself a proxy" do
-        let(:target2) { Xe::Target.new(realizers[2], 0, 'b') }
-        let(:value2) { 4 }
-
-        let(:value) { @proxy2 }
-
-        before do
-          @proxy2 = subject.proxy(target2) { value2 }
-        end
-
-        it "resolves the proxy" do
-          invoke
-          expect(@proxy.__resolved?).to be_true
-        end
-
-        it "resolves the proxy with a proxy" do
-          invoke
-          expect(@proxy.__value?).to be_false
-        end
-
-        it "invalidates the proxy" do
-          invoke
-          expect(@proxy.__valid?).to be_false
-        end
-
-        it "sets the correct value as the proxy's subject" do
-          invoke
-          # Compare the proxies by their lazy-assigned id.
-          expect(@proxy.__subject.__proxy_id).to eql(@proxy2.__proxy_id)
-        end
-
-        context "after resolving the subjects" do
-          before do
-            invoke
-            @proxy.to_i
-            @proxy2.to_i
-          end
-
-          it "has the value of the second" do
-            expect(@proxy.to_i).to eq(@proxy2.to_i)
-          end
-
-          it "has memoized the value of the second in the first" do
-            expect(@proxy.__value?).to be_true
-          end
-        end
-      end
-    end
-
-  end
-
   describe '#release_all_fibers!' do
 
     context "when no fibers are waiting" do
@@ -1419,35 +1448,6 @@ describe Xe::Context do
       it "releases all fibers" do
         subject.release_all_fibers!
         @fibers.each { |f| expect(f).to_not be_alive }
-      end
-    end
-
-  end
-
-  describe '#invalidate_proxies!' do
-
-    context "when the context has no proxies" do
-      it "is a no-op" do
-        subject.invalidate_proxies!
-      end
-    end
-
-    context "when the context has proxies" do
-      before do
-        @proxies = realizers.map do |realizer|
-          target = Xe::Target.new(realizer, 0, 'a')
-          subject.proxy(target) do
-            # This should never happen.
-            raise Xe::Test::Error
-          end
-        end
-      end
-
-      it "invalidates the proxies" do
-        subject.invalidate_proxies!
-        @proxies.each do |proxy|
-          expect(proxy.__valid?).to be_false
-        end
       end
     end
 

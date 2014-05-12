@@ -6,8 +6,10 @@ SimpleCov.start do
   add_filter 'spec'
 end
 
-XE_STRESS_LEVEL = 1      # Count of randomized iterations to run
-XE_RUN_TORTURE  = false  # Should we run the integration torture tests?
+# Count of randomized iterations to run.
+XE_STRESS_LEVEL = 1
+# Should we run the integration torture tests?
+XE_RUN_TORTURE  = !ENV['NO_TORTURE']
 
 require 'xe'
 
