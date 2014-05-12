@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Xe - Garbage Collection (General)" do
+describe "Xe - Garbage Collection (Enumeration)" do
   include Xe::Test::GC
 
   let(:realizer_value) do
