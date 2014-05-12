@@ -645,6 +645,26 @@ describe Xe::Context do
       end
     end
 
+    context "when there are waiting fibers" do
+      let(:fiber_count) { 2 }
+
+      before do
+        @fibers = (0...fiber_count).map do |i|
+          subject.begin_fiber do
+            subject.wait(target) do
+              # This should never happen.
+              raise Xe::Test::Error
+            end
+          end
+        end
+      end
+
+      it "releases all fibers" do
+        subject.release_all_fibers!
+        @fibers.each { |f| expect(f).to_not be_alive }
+      end
+    end
+
     it "sets the policy to nil" do
       subject.invalidate!
       expect(subject.policy).to be_nil
