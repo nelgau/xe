@@ -13,9 +13,6 @@ module Xe
       # win for performance, it had the effect of making the code much harder
       # to read. There ain't no such thing as a free lunch.
       class Mapper < Base
-        attr_reader :enumerable
-        attr_reader :results
-
         def initialize(context, enumerable, &map_proc)
           super(context)
           raise ArgumentError, "No block given" unless block_given?
@@ -69,7 +66,7 @@ module Xe
                 # Consume a new object from the enumerable. If there are no
                 # objects left, it raises StopIteration and proceeds to (2).
                 object = @consumer.next
-                index  = results.length
+                index  = @results.length
                 # Each result value of the mapper is unique and is referenced
                 # by a target constructed from the instance and the index.
                 target = Target.new(self, index)
@@ -83,26 +80,24 @@ module Xe
               # a deferred value, the invocation will not return immediately
               # and instead transfer control to (3).
               value = @map_proc.call(object)
+
+              # (4) The value is computed. After reaching here, it might be the
+              # case that we substituted a proxy for the result.
               has_value = true
 
-              # (4) After reaching here, it might be the case that we returned
-              # a proxy to the result. Just saying.
-
-              # If the parent fiber didn't emit a proxy, we're responsible for
-              # appending the new value to the results.
-              @results << value if !did_proxy
-
-              # It might be the case that we returned a proxy to the result. We
-              # should know this from did_proxy. However, for transparency and
-              # consistency, we always dispatch the computed value to the
-              # context. This resolves the proxy, releases any fibers blocked
-              # on it and allows us to trace the realization.
-              context.dispatch(target, value)
-
-              # If we proxied the last iteration, this fiber has completed its
-              # responsibilities and another fiber has continued the
-              # enumeration. If this is case, terminate immediately.
-              break if did_proxy
+              if did_proxy
+                # We returned a proxy to the result. Dispatch the computed
+                # value to the context. This resolves the proxy and releases
+                # any fibers blocked on it.
+                context.dispatch(target, value)
+                # This fiber has completed its responsibilities and another
+                # fiber has continued the enumeration. Terminate immediately.
+                break
+              else
+                # Since we didn't emit a proxy, we're responsible for
+                # appending the new value to the results.
+                @results << value if !did_proxy
+              end
             end
           end
 
@@ -121,14 +116,12 @@ module Xe
             # outstanding events, releasing the dependency on the strategy's
             # fiber. After finalizing, the value must be available, so return
             # it as the subject.
-            results << context.proxy(target) do
+            @results << context.proxy(target) do
               context.finalize!
               # The proxy accepts the returned value as its resolved subject.
               value
             end
           end
-
-          object = nil
         end
 
         # Returns true when enumeration is complete.
