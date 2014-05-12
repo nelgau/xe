@@ -15,6 +15,7 @@ require 'xe'
 
 require 'support/module'
 require 'support/error'
+require 'support/scenario'
 require 'support/gc'
 
 require 'support/mock'
