@@ -50,8 +50,8 @@ module Xe
     end
 
     # Similar to map, but returns the original values.
-    def each
-      run_mapper { |o| yield o; o }
+    def each(&blk)
+      run_mapper { |o| blk.call(o); o }
     end
 
     def inspect
