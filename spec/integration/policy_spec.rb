@@ -23,19 +23,22 @@ describe "Xe - Realization Order" do
     let(:input)  { (0...count).map { |i| realizers[0][i] } }
     let(:output) { (0...count).to_a }
 
+    def invoke
+      Xe.context { Xe.map(input) { |x| x } }
+    end
+
     it "realizes" do
-      result = Xe.context { Xe.map(input) { |x| x } }
-      expect(result).to eq(output)
+      expect(invoke).to eq(output)
     end
 
     it "realizes the values in the largest possible event" do
-      result = Xe.context { Xe.map(input) { |x| x } }
+      invoke
       expect(event_tracer.events.length).to eq(1)
       expect(event_tracer.events[0].length).to eq(count)
     end
   end
 
-  context "when choosing between two realizations at the same depth" do
+  context "when selecting between two realizations at the same depth" do
     let(:count1) { 10 }
     let(:count2) { 20 }
     let(:total)  { count1 + count2 }
@@ -46,26 +49,65 @@ describe "Xe - Realization Order" do
     let(:input)  { group1 + group2 }
     let(:output) { (0...(count1 + count2)).to_a }
 
+    def invoke
+      Xe.context { Xe.map(input) { |x| x } }
+    end
+
     it "realizes" do
-      result = Xe.map(input) { |x| x }
-      expect(result).to eq(output)
+      expect(invoke).to eq(output)
     end
 
     it "realizes both events" do
-      Xe.context { Xe.map(input) { |x| x } }
+      invoke
       expect(event_tracer.events.length).to eq(2)
     end
 
-    it "chooses the smaller realization first" do
-      Xe.context { Xe.map(input) { |x| x } }
+    it "selects the smaller realization first" do
+      invoke
       expect(event_tracer.events[0].deferrable).to eq(realizers[0])
       expect(event_tracer.events[0].length).to eq(count1)
     end
 
-    it "chooses the larger realization last" do
-      Xe.context { Xe.map(input) { |x| x } }
+    it "selects the larger realization last" do
+      invoke
       expect(event_tracer.events[1].deferrable).to eq(realizers[1])
       expect(event_tracer.events[1].length).to eq(count2)
+    end
+  end
+
+  context "when selecting between realizations at different wait depths" do
+    context "when all group sizes are equal" do
+
+      let(:id_count)     { 10 }
+      let(:group2_count) { realizer_count - 1 }
+
+      let(:input1) do
+        (0...id_count).map { |i| realizers[0][i] }
+      end
+
+      let(:input2) do
+        (0...group2_count).map do |ri|
+          (0...id_count).map { |i| realizers[ri + 1][i] }
+        end
+      end
+
+      def invoke
+        Xe.context do
+          Xe.map(input1) { |x| x.to_i }
+          Xe.map(input2) { |j| Xe.map(j) { |x| x.to_i } }
+        end
+      end
+
+      it "realizes all events" do
+        invoke
+        expect(event_tracer.events.length).to eq(realizer_count)
+      end
+
+      it "selecting the shallowest realization first" do
+        invoke
+        expect(event_tracer.events[0].deferrable).to eq(realizers[0])
+        expect(event_tracer.events[0].length).to eq(id_count)
+      end
     end
   end
 
