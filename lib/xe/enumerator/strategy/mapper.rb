@@ -6,12 +6,6 @@ module Xe
       # until it encounters a deferred realization and yields control. In its
       # place, the strategy creates a new fiber to pick up where the last left
       # off. Proxies are substituted for unrealized values.
-      #
-      # Profiling shows the mapper strategy is the hotest hot spot in the code.
-      # Its methods account for 40% of self time in the nested mapping
-      # benchmark. Eek. Steps were taken to reduce this. While this was a huge
-      # win for performance, it had the effect of making the code much harder
-      # to read. There ain't no such thing as a free lunch.
       class Mapper < Base
         def initialize(context, enumerable, &map_proc)
           super(context)
