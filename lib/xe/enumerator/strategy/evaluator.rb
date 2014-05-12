@@ -9,27 +9,27 @@ module Xe
         attr_reader :has_value
         attr_reader :value
 
-        # Initializes a new instance for evaluating value_proc.
-        def initialize(context, &value_proc)
-          super(context)
+        # Evaluates value_proc within a single fiber and returns the value as
+        # the result. If the computation blocks, a proxy object is returned.
+        def call(&value_proc)
           raise ArgumentError, "No block given" unless block_given?
           @value_proc = value_proc
+
           # Each instance of the evaluator strategy is unique. The result is
           # referenced by a distinct target constructed from the instance.
           @target = Target.new(self)
           @has_value = false
           @value = nil
-        end
 
-        # Evaluates value_proc within a single fiber and returns the value as
-        # the result. If the computation blocks, a proxy object is returned.
-        def call
           # Begin a new fiber and transfer control to (1).
           context.begin_fiber { evaluate }
           # (2) The fiber returned control. If we have a value, return it now.
           # Otherwise, the fiber is blocked in value_proc, so return a proxy.
           # In the proxy case, after realization, control will return to (3).
           @has_value ? @value : proxy
+
+        ensure
+          @value_proc = nil
         end
 
         private

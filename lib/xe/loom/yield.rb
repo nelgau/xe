@@ -23,7 +23,7 @@ module Xe
         ::Fiber.yield
       end
 
-      # Sequentially return control to all fibers that were suspended by
+      # Sequentially returns control to all fibers that were suspended by
       # waiting on the given key. Control is transfered back in the order that
       # the fibers began waiting for consistency.
       def release(key, value)
@@ -31,6 +31,18 @@ module Xe
         return unless waiters
         while w = waiters.pop
           w.resume(value)
+        end
+      end
+
+      # Releases all waiting fibers with a nil value, ignoring return values
+      # and exceptions.
+      def clear
+        while (key = waiters.each_key.first)
+          waiters = pop_waiters(key)
+          next unless waiters
+          while w = waiters.pop
+            w.resume(nil) rescue nil
+          end
         end
       end
 

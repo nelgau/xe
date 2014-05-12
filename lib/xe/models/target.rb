@@ -3,7 +3,7 @@ module Xe
     include ImmutableStruct
 
     def inspect
-      "<#Xe::Target [#{source}, #{id}]>"
+      "<#Xe::Target [#{source}, #{id.inspect}]>"
     end
 
     def to_s

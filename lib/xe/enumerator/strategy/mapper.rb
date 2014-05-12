@@ -16,9 +16,10 @@ module Xe
         attr_reader :enumerable
         attr_reader :results
 
-        # Initializes a new instance for mapping map_proc over enumerable.
-        def initialize(context, enumerable, &map_proc)
-          super(context)
+        # Evaluates map_proc over the enumerable within a succession of fibers
+        # and returns an array of results. If any invocation of map_proc
+        # blocks, a proxy object is returned in place of a value.
+        def call(enumerable, &map_proc)
           raise ArgumentError, "No block given" unless block_given?
           @enumerable = enumerable
           @map_proc = map_proc
@@ -26,15 +27,19 @@ module Xe
           @consumer = ::Enumerator.new(enumerable)
           @results = []
           @done = false
-        end
 
-        # Evaluates map_proc over the enumerable within a succession of fibers
-        # and returns an array of results. If any invocation of map_proc
-        # blocks, a proxy object is returned in place of a value.
-        def call
           # If we haven't exhausted the enumerable, begin a new fiber.
           next_fiber until done?
-          results
+          @results
+
+        rescue => e
+          @context = nil
+          @results = nil
+          raise e
+        ensure
+          @enumerable = nil
+          @map_proc = nil
+          @consumer = nil
         end
 
         private
@@ -52,24 +57,27 @@ module Xe
         def next_fiber
           # Initialize local state. These instance variables will be shared
           # with the fiber created in this scope and it alone.
-          object = value = target = nil
+          object = index = target = value = nil
           has_value = did_proxy = false
 
           # Start execution in the fiber at (1).
           context.begin_fiber do
+
             # Greedily consume objects from the enumerable until we run out, or
             # we know that evaluating the iterator blocked and substituted a proxy.
 
             # (1) Iterate until we run out of objects. Each iteration will add a
             # new object to the results by either #emit_value or #emit_proxy.
             loop do
+
               begin
                 # Consume a new object from the enumerable. If there are no elements
                 # remaining, it raises StopIteration and proceeds to (2).
                 object = @consumer.next
+                index  = results.length
                 # Each result value of the mapper is unique and is referenced by a
                 # distinct target constructed from the instance and the index.
-                target = Target.new(self, results.length)
+                target = Target.new(self, index)
               rescue StopIteration
                 # (2) The enumeration is complete. Return a nil iterator.
                 @done = true
@@ -91,6 +99,7 @@ module Xe
               # If the parent fiber didn't emit a proxy, we're responsible for
               # appending the new value to the results.
               @results << value if !did_proxy
+
               # It might be the case that we returned a proxy to the result. We
               # should know this from did_proxy. However, for transparency and
               # consistency, we always dispatch the computed value to the context.
@@ -119,13 +128,14 @@ module Xe
             # made to resolve the subject outside of a managed fiber, the strategy
             # will call the context to finalize all outstanding events, releasing
             # the dependency on the strategy's fiber. After finalizing, the value
-            # must be available, so return it as the subject.
-            @results << context.proxy(target) do
+            results << context.proxy(target) do
               context.finalize!
               # The proxy accepts the returned value as its resolved subject.
               value
             end
           end
+
+          object = nil
         end
 
         # Returns true when enumeration is complete.

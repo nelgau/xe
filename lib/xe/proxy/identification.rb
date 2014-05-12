@@ -1,8 +1,6 @@
 module Xe
   class Proxy < BasicObject
     module Identification
-      # This mutex protects the monotonic proxy counter.
-      @mutex   ||= Mutex.new
       @last_id ||= -1
 
       # @protected
@@ -15,12 +13,10 @@ module Xe
 
       # @protected
       # TESTING AND DEBUGGING ONLY
-      # Thread-safe. Returns a unique, monotonically increasing integer used to
+      # Returns a unique, monotonically increasing integer used to
       # identify proxy objects for debugging chain memoization.
       def self.__next_id
-        @mutex.synchronize do
-          @last_id += 1
-        end
+        @last_id += 1
       end
     end
   end

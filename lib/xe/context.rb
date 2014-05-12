@@ -116,7 +116,11 @@ module Xe
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
+
+      wake_all_fibers!
       invalidate_proxies!
+
+      # Not strictly necessary. But let's help the GC out.
       @policy = nil
       @loom = nil
       @scheduler = nil
@@ -238,10 +242,14 @@ module Xe
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
+    # If the context is not valid after waiting, an exception is raised.
     def wait(target, &cantwait_proc)
       trace(:fiber_wait, target) if @tracer
       scheduler.wait_target(target, loom.current_depth)
-      loom.wait(target, &cantwait_proc)
+      result = loom.wait(target, &cantwait_proc)
+      # If the context is no longer valid, raise an exception now.
+      raise InvalidContextError if !@valid
+      result
     end
 
     # @protected
@@ -263,6 +271,14 @@ module Xe
       elsif @tracer
         trace(:proxy_resolve, target, 0)
       end
+    end
+
+    # @protected
+    # Release all fibers. This is called as the first step during invalidation
+    # after marking the context invalid. It causes an InvalidContextError to be
+    # raised in any waiting fibers. See `Context#wait`.
+    def wake_all_fibers!
+      loom.clear
     end
 
     def invalidate_proxies!

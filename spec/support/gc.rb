@@ -27,6 +27,8 @@ module Xe::Test
       Xe::Loom::Fiber,
       Xe::Enumerator,
       Xe::Enumerator::Strategy::Base,
+      Xe::Event,
+      Xe::Target
     ]
 
     # Store a reference to the root fiber so we can ignore it.
@@ -48,16 +50,24 @@ module Xe::Test
       # against which the return value of `invoke` will be compared. You can
       # disable this behavior by passing :has_output => false.
       def define_test!(options={})
-        name = options[:name] || "holds no references"
-        has_output = options.fetch(:has_output, true)
 
-        it name do
-          _expect_gc!
-          # Invoke the test procedure and immediately discard the result.
-          result = invoke
-          expect(result).to eq(output) if has_output
-          result = nil
+        class_exec do
+          def gc_spec_wrapper(options)
+            has_output = options.fetch(:has_output, true)
+
+            # Invoke the test procedure and immediately discard the result.
+            out = {}
+            out[:result] = invoke
+            expect(out[:result]).to eq(output) if has_output
+            out.clear
+          end
         end
+
+        name = options[:name] || "holds no references"
+        it name do
+          gc_spec_wrapper(options)
+        end
+
       end
 
       # Add a test for garbage collection that calls the `invoke` method and
@@ -65,17 +75,25 @@ module Xe::Test
       # As a convenience, you can use the `
 
       def define_test_with_exception!
+
+        class_exec do
+          def gc_spec_wrapper
+            invoke; nil
+          end
+        end
+
         it "to raise and hold no references" do
           _expect_gc!
           did_raise = false
           begin
-            invoke
+            gc_spec_wrapper
           rescue Xe::Test::GC::Error
             did_raise = true
           end
           expect(did_raise).to be_true
         end
       end
+
     end
 
     module InstanceMethods
@@ -145,7 +163,7 @@ module Xe::Test
     # current scope that will never be collected until we completely run
     # out of heap.
     def self.release_interpreter_lock
-      sleep 0.0001
+      sleep 0.001
     end
 
     # The last fiber that yielded control back to the current fiber has a
@@ -179,7 +197,7 @@ module Xe::Test
         if count > 0
           puts "  #{klass.name}: #{count}".yellow.bold
           objects.each do |obj|
-            puts "    #{obj.inspect}".yellow
+            puts "    #{obj.inspect} (id=#{obj.__id__})".yellow
           end
         end
       end
