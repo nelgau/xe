@@ -18,7 +18,7 @@ module Xe::Test
     RESUME_FIBER = true
 
     # These are the classes associated with a context and after each operation,
-    # none should persist in the heap, even if references to values are held.
+    # none should persist in the heap, even if references to proxies are held.
     CONTEXT_CLASSES = [
       Xe::Context,
       Xe::Context::Scheduler,
@@ -55,11 +55,11 @@ module Xe::Test
           def gc_spec_wrapper(options)
             has_output = options.fetch(:has_output, true)
 
-            # Invoke the test procedure and immediately discard the result.
-            out = {}
-            out[:result] = invoke
-            expect(out[:result]).to eq(output) if has_output
-            out.clear
+            # Invoke the test procedure and store the result (maybe a proxy).
+            @result = invoke
+
+            # If the test specified an output, test it now.
+            expect(@result).to eq(output) if has_output
           end
         end
 
@@ -67,7 +67,6 @@ module Xe::Test
         it name do
           gc_spec_wrapper(options)
         end
-
       end
 
       # Add a test for garbage collection that calls the `invoke` method and

@@ -78,6 +78,18 @@ module Xe
       Enumerator.new(self, enumerable, options)
     end
 
+    # Returns true when the context allows deferring values.
+    def enabled?
+      !!@enabled
+    end
+
+    # Returns true when the context will no longer accept new deferrals.
+    def valid?
+      @valid
+    end
+
+    # Finalization and Invalidation
+
     # Iteratively realize all outstanding deferred values, event by event,
     # It will eventually release all waiting fibers (or deadlock).
     def finalize!
@@ -103,16 +115,6 @@ module Xe
       raise InconsistentContextError if loom.running? || loom.waiters?
     end
 
-    # Returns true when the context allows deferring values.
-    def enabled?
-      !!@enabled
-    end
-
-    # Returns true when the context will no longer accept new deferrals.
-    def valid?
-      @valid
-    end
-
     # After calling this method, the context will refuse to defer values.
     def invalidate!
       @valid = false
@@ -127,6 +129,8 @@ module Xe
       @proxies = nil
       @cache = nil
     end
+
+    # Deferrals and Realization
 
     # Defer the realization of a single value on the deferrable by returning a
     # proxy instance. The proxy can be stored in containers and passed to
@@ -154,6 +158,29 @@ module Xe
     end
 
     # @protected
+    # Immediately realizes the given target along with others that are grouped
+    # with it in the scheduler's queue. If the target isn't in the scheduler,
+    # this method raises InconsistentContextError.
+    def realize_target(target)
+      event = scheduler.pop_event(target)
+      raise InconsistentContextError if !event
+      realize_event(event)[target.id]
+    end
+
+    # @protected
+    # Immediately realizes the given event. All realized values are dispatched
+    # to their associated target, releasing any waiting fibers. The value is
+    # cached in the context so that further deferrals return immediately.
+    def realize_event(event)
+      trace(:event_realize, event) if @tracer
+      event.realize do |target, value|
+        trace(:value_realized, target) if @tracer
+        cache[target] = value
+        dispatch(target, value)
+      end
+    end
+
+    # @protected
     # Communicate a target's value to its proxies and resume any fibers that
     # are waiting on realization. Because targets don't contain unrealized
     # values, this will NEVER suspend the current fiber.
@@ -162,6 +189,8 @@ module Xe
       resolve(target, value)
       release(target, value)
     end
+
+    # Proxies
 
     # @protected
     # Returns a new proxy for the given target. If some invocation on the proxy
@@ -175,6 +204,25 @@ module Xe
       (proxies[target] ||= []) << proxy
       proxy
     end
+
+    # @protected
+    # Resolve any proxies for the given target by setting the value of their
+    # subject. They will drop all references to the context.
+    def resolve(target, value)
+      target_proxies = proxies.delete(target) || []
+      trace(:proxy_resolve, target, target_proxies.count) if @tracer
+      target_proxies.each { |p| p.__set_subject(value) }
+    end
+
+    # @protected
+    # Invalidate all proxies. They will drop all references to the context.
+    def invalidate_proxies!
+      all_proxies = proxies.values.inject([], &:concat)
+      all_proxies.each { |p| p.__invalidate! }
+      proxies.clear
+    end
+
+    # Fibers
 
     # @protected
     # Returns a new fiber that will start execution in the given block. If
@@ -216,29 +264,6 @@ module Xe
     end
 
     # @protected
-    # Immediately realizes the given target along with others that are grouped
-    # with it in the scheduler's queue. If the target isn't in the scheduler,
-    # this method raises InconsistentContextError.
-    def realize_target(target)
-      event = scheduler.pop_event(target)
-      raise InconsistentContextError if !event
-      realize_event(event)[target.id]
-    end
-
-    # @protected
-    # Immediately realizes the given event. All realized values are dispatched
-    # to their associated target, releasing any waiting fibers. The value is
-    # cached in the context so that further deferrals return immediately.
-    def realize_event(event)
-      trace(:event_realize, event) if @tracer
-      event.realize do |target, value|
-        trace(:value_realized, target) if @tracer
-        cache[target] = value
-        dispatch(target, value)
-      end
-    end
-
-    # @protected
     # Suspend the execution of the current managed fiber until the value of
     # the given target becomes available. At that time, control will transfer
     # back into this method and it will return a realized value to the caller.
@@ -261,19 +286,6 @@ module Xe
     end
 
     # @protected
-    # Resolve any proxies for the given target by setting the value of their
-    # subject. They will drop all references to the context.
-    def resolve(target, value)
-      target_proxies = proxies.delete(target)
-      if target_proxies
-        trace(:proxy_resolve, target, target_proxies.count) if @tracer
-        target_proxies.each { |p| p.__set_subject(value) }
-      elsif @tracer
-        trace(:proxy_resolve, target, 0) if @tracer
-      end
-    end
-
-    # @protected
     # Release all fibers. This is called as the first step during invalidation
     # after marking the context invalid. It causes an InvalidContextError to be
     # raised in any waiting fibers. See `Context#wait`.
@@ -281,11 +293,7 @@ module Xe
       loom.clear
     end
 
-    def invalidate_proxies!
-      all_proxies = proxies.values.inject([], &:concat)
-      all_proxies.each { |p| p.__invalidate! }
-      proxies.clear
-    end
+    # Tracing
 
     # @protected
     # Log an event to the context's tracer.

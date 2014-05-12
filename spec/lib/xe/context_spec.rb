@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'set'
 
 describe Xe::Context do
-  include Xe::Test::Mock::Context::Realizer
+  include Xe::Test::Mock::Context
 
   subject { Xe::Context.new(options) }
 
