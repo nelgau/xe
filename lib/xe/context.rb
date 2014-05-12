@@ -269,7 +269,7 @@ module Xe
         trace(:proxy_resolve, target, target_proxies.count) if @tracer
         target_proxies.each { |p| p.__set_subject(value) }
       elsif @tracer
-        trace(:proxy_resolve, target, 0)
+        trace(:proxy_resolve, target, 0) if @tracer
       end
     end
 
