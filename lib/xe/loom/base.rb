@@ -46,6 +46,13 @@ module Xe
         return
       end
 
+      # Releases all waiting fibers with a nil value, ignoring return values
+      # and exceptions. The default implementation is empty as the base class
+      # doesn't suspend fibers.
+      def clear
+        return
+      end
+
       # Returns true if any fibers are presently running.
       def running?
         !running.empty?

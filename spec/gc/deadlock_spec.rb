@@ -4,9 +4,9 @@ describe "Xe - Garbage Collection (Deadlock)" do
   include Xe::Test::GC
 
   let(:source) { Xe::Deferrable.new }
-  let(:target) { Xe::Target.new(source) }
 
   def new_waiting_fiber(context)
+    target = Xe::Target.new(source)
     context.begin_fiber do
       context.wait(target) do
         # This should never happen.
