@@ -36,7 +36,8 @@ module Xe
     def banner(name, klass)
       print "\n"
       hrule = "-" * 20
-      print "#{hrule} #{titleize(name)} #{hrule}\n".bold
+      print "#{hrule} #{titleize(name)} #{hrule}\n\n".bold
+      print "#{klass.description}\n"
     end
 
     def prepare(name, klass)

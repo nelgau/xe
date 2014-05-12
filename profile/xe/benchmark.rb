@@ -11,6 +11,11 @@ module Xe
         Xe::Benchmark.all_benchmarks[name] ||= self
       end
 
+      # Returns a description of the benchmark.
+      def self.description
+        "No description!"
+      end
+
       # Construct an instance and run the benchmark.
       def self.call
         new.call

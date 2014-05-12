@@ -8,8 +8,14 @@ module Xe
 
       ARRAY_SIZE = 100
       VALUE_RANGE = 1000
-      MAX_FIBERS = 100
       REALIZER_COUNT = 3
+      MAX_FIBERS = 25
+
+      def self.description
+        "Nested Xe.map over #{ARRAY_SIZE ** 2} values " \
+        "with #{VALUE_RANGE} distinct IDs and #{REALIZER_COUNT} realizers.\n" \
+        "The context uses a maximum of #{MAX_FIBERS} fibers."
+      end
 
       def initialize
         @enumerable = construct_enumerable

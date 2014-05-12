@@ -7,6 +7,10 @@ module Xe::Test
           Context.new(&finalize_proc)
         end
 
+        def new_proxy_mock(&resolve_proc)
+          Proxy.new(&resolve_proc)
+        end
+
         # Returns true if the object is an instance of the minimal proxy.
         def is_proxy?(object)
           object.is_a?(Proxy)
@@ -56,8 +60,12 @@ module Xe::Test
           end
 
           def wait(target, &cantwait_proc)
-            (waiters[target] ||= []) << ::Fiber.current
-            @root_fiber != ::Fiber.current ? ::Fiber.yield : cantwait_proc.call
+            if @root_fiber != ::Fiber.current
+              (waiters[target] ||= []) << ::Fiber.current
+              ::Fiber.yield
+            else
+              cantwait_proc.call
+            end
           end
 
           def release(target, value)

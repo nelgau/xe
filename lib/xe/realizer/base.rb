@@ -33,8 +33,9 @@ module Xe
         key ||= group_key(id)
         # If an active context is available, defer the evaluation of this id.
         # Otherwise, realize the value immediately.
-        Context.active? ?
-          Context.current.defer(self, id, key) :
+        current = Context.current
+        current && current.enabled? ?
+          current.defer(self, id, key) :
           call([id], key)[id]
       end
 
