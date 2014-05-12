@@ -698,6 +698,16 @@ describe Xe::Context do
       subject.defer(deferrable, id, group_key)
     end
 
+    context "when the context is disabled" do
+      before do
+        options.merge!(:enabled => false)
+      end
+
+      it "raises DisabledContextError" do
+        expect { invoke }.to raise_error(Xe::DisabledContextError)
+      end
+    end
+
     context "when the context is invalid" do
       before do
         subject.invalidate!
@@ -705,6 +715,14 @@ describe Xe::Context do
 
       it "raises Xe::InvalidContextError" do
         expect { invoke }.to raise_error(Xe::InvalidContextError)
+      end
+    end
+
+    context "when the deferrable isn't a deferrable" do
+      let(:deferrable) { double("Not Deferrable") }
+
+      it "raises Xe::InvalidContextError" do
+        expect { invoke }.to raise_error(Xe::DeferError)
       end
     end
 
@@ -973,6 +991,16 @@ describe Xe::Context do
       subject.proxy(target, &force_proc)
     end
 
+    context "when the context is disabled" do
+      before do
+        options.merge!(:enabled => false)
+      end
+
+      it "raises DisabledContextError" do
+        expect { invoke }.to raise_error(Xe::DisabledContextError)
+      end
+    end
+
     it "returns a proxy" do
       expect(Xe::Proxy.proxy?(invoke)).to be_true
     end
@@ -1159,6 +1187,16 @@ describe Xe::Context do
 
     def invoke_suspended
       subject.begin_fiber { ::Fiber.yield }
+    end
+
+    context "when the context is disabled" do
+      before do
+        options.merge!(:enabled => false)
+      end
+
+      it "raises DisabledContextError" do
+        expect { invoke_suspended }.to raise_error(Xe::DisabledContextError)
+      end
     end
 
     context "when there are available fibers" do
