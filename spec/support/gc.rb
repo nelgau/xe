@@ -56,7 +56,9 @@ module Xe::Test
             has_output = options.fetch(:has_output, true)
 
             # Invoke the test procedure and store the result (maybe a proxy).
-            @result = invoke
+            @result = nil
+            thread = Thread.new { @result = invoke }
+            thread.join
 
             # If the test specified an output, test it now.
             expect(@result).to eq(output) if has_output
@@ -77,7 +79,9 @@ module Xe::Test
 
         class_exec do
           def gc_spec_wrapper
-            invoke; nil
+            thread = Thread.new { invoke }
+            thread.join
+            nil
           end
         end
 

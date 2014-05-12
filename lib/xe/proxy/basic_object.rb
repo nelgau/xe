@@ -9,6 +9,14 @@ module Xe
         !__resolve_value
       end
 
+      # These equality predicates are often short-circuited in Ruby's low-level
+      # classes (e.g., anything derived from Struct.new). In those cases, to
+      # get the expected behavior of resolution _before_ comparison, you must
+      # compare the proxy to the value, not the other way around. For example:
+      #
+      #   struct_proxy == struct -- works fine.
+      #   struct == struct_proxy -- always false.
+
       def ==(other)
         __resolve_value == Proxy.resolve(other)
       end

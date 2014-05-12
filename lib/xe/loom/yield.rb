@@ -38,10 +38,12 @@ module Xe
       # and exceptions from within Xe itself.
       def clear
         while (key = waiters.each_key.first)
-          waiters = pop_waiters(key)
-          next unless waiters
-          while w = waiters.pop
-            w.resume rescue Xe::Error
+          key_waiters = pop_waiters(key)
+          while w = key_waiters.pop
+            begin
+              w.resume
+            rescue Xe::Error
+            end
           end
         end
       end

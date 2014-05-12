@@ -14,12 +14,7 @@ module Xe
 
     # Create an event that represents a group of targets.
     def self.from_target(target)
-      deferrable = target.source
-      # The target's source must be an instance of deferrable.
-      if !deferrable.is_a?(Deferrable)
-        raise DeferError, "The target's source isn't deferrable."
-      end
-      new(deferrable, target.group_key)
+      new(target.source, target.group_key)
     end
 
     # Returns the event key for the given deferrable group.
