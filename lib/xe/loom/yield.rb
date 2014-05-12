@@ -35,13 +35,13 @@ module Xe
       end
 
       # Releases all waiting fibers with a nil value, ignoring return values
-      # and exceptions.
+      # and exceptions from within Xe itself.
       def clear
         while (key = waiters.each_key.first)
           waiters = pop_waiters(key)
           next unless waiters
           while w = waiters.pop
-            w.resume(nil) rescue nil
+            w.resume rescue Xe::Error
           end
         end
       end
