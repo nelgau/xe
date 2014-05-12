@@ -69,6 +69,8 @@ module Xe
     # Runs a computation, returning a value, within a single fiber. If the
     # fiber blocks on a realization, a proxy is returned instead.
     def run_evaluator(&blk)
+      # Serialize execution when the context is disabled.
+      return blk.call if !context.enabled?
       Strategy::Evaluator.(context, &blk)
     end
 
@@ -76,6 +78,8 @@ module Xe
     # succession of fibers. If some fiber blocks on a realization, a proxy is
     # substituted for that value.
     def run_mapper(&blk)
+      # Serialize execution when the context is disabled.
+      return enumerable.map(&blk) if !context.enabled?
       Strategy::Mapper.(context, enumerable, &blk)
     end
   end

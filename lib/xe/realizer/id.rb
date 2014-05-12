@@ -33,9 +33,11 @@ module Xe
       end
 
       # Calls perform and returns a hash from derived identifiers to realized
-      # values. Derivation uses the #id_proc attribute.
-      def call(group, key)
-        super.each_with_object({}) do |v, rs|
+      # values. Derivation uses the #id_proc attribute. If the results can't
+      # be enumerated, it raises an exception.
+      def transform(group, results)
+        raise UnsupportedRealizationTypeError if !results.respond_to?(:each)
+        results.each_with_object({}) do |v, rs|
           rs[@value_id.call(v)] = v
         end
       end

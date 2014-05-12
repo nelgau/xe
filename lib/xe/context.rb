@@ -136,8 +136,9 @@ module Xe
     # methods without realizing it. However, invoking a method on it will
     # suspend the execution of the current managed fiber.
     def defer(deferrable, id, group_key=nil)
-      # Disallow deferrals on invalid contexts.
-      raise InvalidContextError if !@valid
+      # Disallow deferrals on disabled and invalid contexts.
+      raise DisabledContextError if !@enabled
+      raise InvalidContextError  if !@valid
       raise DeferError if !deferrable.is_a?(Deferrable)
 
       target = Target.new(deferrable, id, group_key)
@@ -197,8 +198,11 @@ module Xe
     # would require its immediate realization, the proxy will suspend the
     # execution of the current fiber and wait for the target's value to be
     # dispatched. If no managed fiber is avilable (from which to yield), the
-    # proxy calls force_proc and sets the return value as its subject.
+    # proxy calls force_proc and sets the return value as its subject. If
+    # this method is called on a disabled context, it will raise an exception.
     def proxy(target, &force_proc)
+      # Don't allow proxies to be created on disabled contexts.
+      raise DisabledContextError if !@enabled
       trace(:proxy_new, target) if @tracer
       proxy = Proxy.new { wait(target, &force_proc) }
       (proxies[target] ||= []) << proxy
@@ -229,6 +233,8 @@ module Xe
     # creating it would exceed the maximum count allowed in the context's
     # config, we will realize deferred values until a fiber becomes available.
     def begin_fiber(&blk)
+      # Don't allow fibers to be created on a disabled context.
+      raise DisabledContextError if !@enabled
       # If we can't start anymore fibers, free some immediately.
       free_fibers if !can_begin_fiber?
       trace(:fiber_new) if @tracer
@@ -269,6 +275,8 @@ module Xe
     # back into this method and it will return a realized value to the caller.
     # If the context is not valid after waiting, an exception is raised.
     def wait(target, &cantwait_proc)
+      # Don't allow waiting on a disabled context.
+      raise DisabledContextError if !@enabled
       trace(:fiber_wait, target) if @tracer
       scheduler.wait_target(target, loom.current_depth)
       result = loom.wait(target, &cantwait_proc)

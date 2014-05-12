@@ -26,8 +26,20 @@ describe Xe::Target do
 
   describe '#inspect' do
 
-    it "is a string" do
-      expect(subject.inspect).to be_an_instance_of(String)
+    context "when the target has no group key" do
+      let(:group_key) { nil }
+
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
+    end
+
+    context "when the target has a group key" do
+      let(:group_key) { 'a' }
+
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
     end
 
   end

@@ -1,29 +1,37 @@
 module Xe
-  module Benchmark
-    # Returns a hash mapping benchmark names to classes.
-    def self.all_benchmarks
-      @all_benchmarks ||= {}
-    end
+  module Profile
+    module Benchmark
+      extend Enumerable
 
-    class Base
-      # Register this class as the benchmark of the given name.
-      def self.register_as(name)
-        Xe::Benchmark.all_benchmarks[name] ||= self
+      # Returns a hash mapping benchmark names to classes.
+      def self.all_benchmarks
+        @all_benchmarks ||= {}
       end
 
-      # Returns a description of the benchmark.
-      def self.description
-        "No description!"
+      def self.each(&blk)
+        all_benchmarks.each(&blk)
       end
 
-      # Construct an instance and run the benchmark.
-      def self.call
-        new.call
-      end
+      class Base
+        # Register this class as the benchmark of the given name.
+        def self.register_as(name)
+          Xe::Profile::Benchmark.all_benchmarks[name] ||= self
+        end
 
-      # Run the benchmark.
-      def call
-        raise NotImplementedError
+        # Returns a description of the benchmark.
+        def self.description
+          "No description!"
+        end
+
+        # Construct an instance and run the benchmark.
+        def self.call
+          new.call
+        end
+
+        # Run the benchmark.
+        def call
+          raise NotImplementedError
+        end
       end
     end
   end
