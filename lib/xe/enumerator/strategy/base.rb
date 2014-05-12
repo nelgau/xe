@@ -15,8 +15,8 @@ module Xe
       # beyond the execution of the entry point.
       class Base
         # Constructs a new instance of the strategy and invokes it.
-        def self.call(context, *args, &blk)
-          new(context).call(*args, &blk)
+        def self.call(*args, &blk)
+          new(*args, &blk).call
         end
 
         attr_reader :context
