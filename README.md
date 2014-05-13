@@ -11,10 +11,10 @@ class UserRealizer < Xe::Realizer::Id
 end
 
 > Xe.context { [
->   UserRealizer[1],
->   UserRealizer[2],
->   UserRealizer[3]
-> ] }
+    UserRealizer[1],
+    UserRealizer[2],
+    UserRealizer[3]
+  ] }
 
 # User Load (0.2ms)  SELECT `users`.* FROM `users` WHERE `users`.`id` IN (1, 2, 3)
 # => [#<User id: 1, ... >, #<User id: 2, ... >, #<User id: 3, ... >]
