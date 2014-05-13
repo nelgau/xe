@@ -22,13 +22,8 @@ describe Xe::Realizer::Base do
     end
 
     it "calls #[] on an instance of Xe::Realizer::Base" do
-      expect(@realizer).to receive(:[]).with(1, 2)
-      klass[1, 2]
-    end
-
-    it "accepts a single argument" do
-      expect(@realizer).to receive(:[]).with(1, nil)
-      klass[1]
+      expect(@realizer).to receive(:[]).with(2)
+      klass[2]
     end
 
   end
@@ -93,23 +88,10 @@ describe Xe::Realizer::Base do
       end
     end
 
-    context "when a key is provided" do
-      let(:key) { 2 }
-
-      it "defers using that key" do
-        expect(context).to receive(:defer).with(anything, anything, key)
-        subject[1, key]
-      end
-    end
-
-    context "when a key is not provided" do
-      let(:key) { nil }
-
-      it "delegates to #group_key to compute the key" do
-        subject.stub(:group_key).and_return('abc')
-        expect(context).to receive(:defer).with(anything, anything, 'abc')
-        subject[1, key]
-      end
+    it "delegates to #group_key to compute the key" do
+      subject.stub(:group_key).and_return('abc')
+      expect(context).to receive(:defer).with(anything, anything, 'abc')
+      subject[1]
     end
 
   end
