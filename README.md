@@ -18,7 +18,7 @@ Not every realizer needs to subdivide its members but some can benefit from the 
 If you request an object from a realizer, it will immediately provide one, at any time.
 You may return it, store it in a data structure or pass it as an argument to a method.
 
-In actuality, realizers are the barrier between 'referencing' and 'holding' an object.
+In reality, realizers are a barrier between 'referencing' and 'holding' an object.
 When you request an object, Xe drags its feet.
 Requesting an object merely schedules it to be loaded at some future time.
 It does this to accumulate large groups of objects to realize at once.
