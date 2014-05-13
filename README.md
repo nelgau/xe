@@ -4,10 +4,20 @@ Xe: The Batching Lazy Evaluator
 Xe allows you to reorder expensive operations and efficiently execute them in groups.
 
 ```
-> plus_one = Xe.realizer { |ids| ids.map { |i| i + 1 } }
-> Xe.map([1, 2, 3]) { |i| plus_one[i] }
-# => [2, 3, 4]
-```
+class UserRealizer < Xe::Realizer::Id
+  def perform(ids)
+    User.where(:id => ids)
+  end
+end
+
+> Xe.context { [
+>   UserRealizer[1],
+>   UserRealizer[2],
+>   UserRealizer[3]
+> ] }
+
+# User Load (0.2ms)  SELECT `users`.* FROM `users` WHERE `users`.`id` IN (1, 2, 3)
+# => [#<User id: 1, ... >, #<User id: 2, ... >, #<User id: 3, ... >]
 
 For some perspective, see: http://en.wikipedia.org/wiki/One-electron_universe
 
