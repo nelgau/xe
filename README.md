@@ -14,8 +14,9 @@ Each group is named by a unique key and you must provide a procedure to load it.
 You might decide that no meaningful grouping exists and that's OK.
 Not every realizer needs to subdivide its members but some can benefit from the additional flexibility.
 
-If you request an object from a realizer, it will immediately provide one, at any time.
-You may return it, store it in a data structure or pass it as an argument to a method.
+If you request an object from a realizer, it will immediately provide it, at any time.
+You may return the object, store it in a data structure or pass it as an argument to a method.
+For all intents and purposes, this is the object you requested and behaves identically to it.
 
 But in reality, realizers act as a barrier between 'referencing' and 'holding' an object.
 Requesting an object from a realizer merely schedules it to be loaded at some future time.
