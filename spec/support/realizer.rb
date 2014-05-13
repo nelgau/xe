@@ -22,7 +22,7 @@ module Xe::Test
     # execution, especially in the case of realizers returning deferred values.
     def self.torture
       @torture ||= [
-        DrunkWalk.for_depth(5),
+        DrunkWalk.for_depth(5)
       ]
     end
   end

@@ -2,14 +2,14 @@ module Xe::Test
   module Scenario
     # Each test will be run under these conditions and the output, be it value
     # or exception, will be compared to the serialized scenario.
-    SCENARIO_OPTIONS = {
+    DEFAULT_SCENARIO_OPTIONS = {
       :serialized     => { :enabled    => false },
       :one_fiber      => { :max_fibers => 1     },
       :several_fibers => { :max_fibers => 10    },
       :many_fibers    => { :max_fibers => 200   }
     }
     # The scenario with this name is used as a reference.
-    REFERENCE_KEY = :serialized
+    DEFAULT_REFERENCE_KEY = :serialized
 
     # This exception is thrown and caught by the specs. It would be unwise to
     # rescue from a very general exception like StandardError as this would
@@ -28,7 +28,7 @@ module Xe::Test
       def expect_consistent!
         it "is consistent" do
           results = run_scenarios
-          reference = results.delete(REFERENCE_KEY)
+          reference = results.delete(reference_key)
           Scenario.verify_results(results, reference)
         end
       end
@@ -53,6 +53,11 @@ module Xe::Test
       base.extend(ClassMethods)
       base.send(:include, InstanceMethods)
       base.send(:include, PrivateMethods)
+
+      base.class_exec do
+        let(:scenario_options) { DEFAULT_SCENARIO_OPTIONS }
+        let(:reference_key)    { DEFAULT_REFERENCE_KEY }
+      end
     end
 
     module PrivateMethods
@@ -61,7 +66,7 @@ module Xe::Test
         start_time = Time.now
         Scenario.log "Working."
 
-        results = SCENARIO_OPTIONS.each_with_object({}) do |(name, opts), rs|
+        results = scenario_options.each_with_object({}) do |(name, opts), rs|
           rs[name] = run_context(opts)
           Scenario.log '.'
         end
@@ -83,7 +88,8 @@ module Xe::Test
     def self.verify_results(results, reference)
       results.each do |key, result|
         if result != reference
-          raise "Verification failed! Run #{key} is not correct."
+          explain_string = explain_value(result, reference)
+          raise "Verification failed! Run #{key} #{explain_string}."
         end
       end
     end
@@ -91,9 +97,22 @@ module Xe::Test
     def self.verify_exception(results)
       results.each do |key, result|
         if !result[:error] || !result[:error].is_a?(Error)
-          raise "Verification failed! Run #{key} did not fail as expected."
+          explain_string = explain_error(result)
+          raise "Verification failed! Run #{key} #{explain_string}."
         end
       end
+    end
+
+    def self.explain_value(result, reference)
+      result[:error] ?
+        "had an error when a value was expected: #{result[:error]}" :
+        "has a distinct value"
+    end
+
+    def self.explain_error(result)
+      result[:error] ?
+        "had a distinct error: #{result[:error]}" :
+        "had a value when an error was unexpected"
     end
 
     # Purely for debugging and independent verification.
