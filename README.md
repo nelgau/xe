@@ -5,7 +5,7 @@ Xe allows you to reorder expensive operations and efficiently execute them in ba
 
 http://en.wikipedia.org/wiki/One-electron_universe
 
-## Realizers and Enumerators
+### Realizers and Enumerators
 
 Realizers collect related operations and implement an efficient method to compute them in batches.
 Most of the time, you'll interact with Xe by writing new realizers or extending existing ones.
