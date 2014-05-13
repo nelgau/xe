@@ -9,7 +9,7 @@ Xe allows you to reorder expensive operations and efficiently execute them in gr
 # => [2, 3, 4]
 ```
 
-http://en.wikipedia.org/wiki/One-electron_universe
+For some perspective, see: http://en.wikipedia.org/wiki/One-electron_universe
 
 ### Realizers and Enumerators
 
