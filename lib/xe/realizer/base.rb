@@ -3,34 +3,25 @@ require 'set'
 module Xe
   module Realizer
     class Base < Deferrable
-      # On passing group keys to .[] and #[] ...
-      #
-      # Smart clients of Realizer::Base may know best how to group
-      # realizations. Since delegating this responsibility into the realizer
-      # subclass itself (using #group_key) may not be the most effective
-      # factoring (to keep the type of group members trivial, like integers,
-      # and push all information about 'how' to realize values into the key
-      # type), this interface is provided for the advanced consumer.
-
       # Returns a proxy for a realized value with the given id, creating a
       # singleton instance of the realizer if none yet exists. As common
       # realizer subclasses are likely to be stateless, this is the preferred
       # shorthand for deferrals. This method delegates to #[].
-      def self.[](id, key=nil)
-        (@default ||= new)[id, key]
+      def self.[](id)
+        (@default ||= new)[id]
       end
 
       # If an active context exists, this method returns a proxy for the
       # realized value with the given id. If no key is given, the #group_key
       # method is invoked to provide one.
-      def [](id, key=nil)
+      def [](id)
         # Block on the realization of the id. This enforces isolation between
         # values (which can be proxied and realized lazily) and the manner
         # by which they are referenced (ids, targets and events). This is done
         # to prevent a proxy, while being used as the id of another deferral,
         # from suspending a fiber at an arbitrary place inside the context.
         id = Proxy.resolve(id)
-        key ||= group_key(id)
+        key = group_key(id)
         # If an active context is available, defer the evaluation of this id.
         # Otherwise, realize the value immediately, individually and serially.
         current = Context.current
