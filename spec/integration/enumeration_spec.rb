@@ -3,6 +3,14 @@ require 'spec_helper'
 describe "Xe - Garbage Collection (Enumeration)" do
   include Xe::Test::Scenario
 
+  let(:scenario_options) { {
+    :serialized     => { :enabled    => false },
+    # The 'nested' tests require at least two fibers to prevent deadlock.
+    :two_fibers     => { :max_fibers => 2     },
+    :several_fibers => { :max_fibers => 10    },
+    :many_fibers    => { :max_fibers => 200   }
+  } }
+
   let(:realizer_value) do
     Xe.realizer do |xs|
       xs.each_with_object({}) do |x, rs|
