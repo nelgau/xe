@@ -1,4 +1,4 @@
-Xe: A Batching Lazy Evaluator
+Xe: The Batching Lazy Evaluator
 ==
 
 Xe allows you to reorder expensive operations and efficiently execute them in batches.
