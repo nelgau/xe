@@ -3,6 +3,12 @@ Xe: The Batching Lazy Evaluator
 
 Xe allows you to reorder expensive operations and efficiently execute them in groups.
 
+```
+> plus_one = Xe.realizer { |ids| ids.map { |i| i + 1 } }
+> Xe.map([1, 2, 3]) { |i| plus_one[i] }
+# => [2, 3, 4]
+```
+
 http://en.wikipedia.org/wiki/One-electron_universe
 
 ### Realizers and Enumerators
