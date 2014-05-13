@@ -16,7 +16,7 @@ Not every realizer needs to subdivide its members but some can benefit from the 
 
 If you request an object from a realizer, it will immediately provide it, at any time.
 You may return the object, store it in a data structure or pass it as an argument to a method.
-For all intents, this is the object you requested and it will behaves identically.
+For all intents, this is the object you requested and it behaves identically.
 
 But in reality, realizers act as a barrier between 'referencing' and 'holding' an object.
 Requesting an object from a realizer merely schedules it to be loaded at some future time.
