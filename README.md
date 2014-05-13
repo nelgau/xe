@@ -44,7 +44,7 @@ it can suspend the flow of execution to explore other avenues.
 When it decides that realizing the object is the best course of action,
 control will resume where it left off and you will find yourself holding the object.
 
-As a complement, enumerators take this further by *introducing* oportunities to reorder operations.
+Enumerators take this further by *introducing* oportunities to reorder operations.
 
 
 
