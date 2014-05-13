@@ -1,7 +1,7 @@
 Xe: The Batching Lazy Evaluator
 ==
 
-Xe allows you to reorder expensive operations and efficiently execute them in batches.
+Xe allows you to reorder expensive operations and efficiently execute them in groups.
 
 http://en.wikipedia.org/wiki/One-electron_universe
 
