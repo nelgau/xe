@@ -35,7 +35,7 @@ If you request an object from a realizer, it will immediately provide it, at any
 You may return the object, store it in a data structure or pass it as an argument to a method.
 For all intents, this is the object you requested and it behaves identically.
 
-But in reality, realizers act as a barrier between 'referencing' and 'holding' an object.
+But in reality, realizers act as a barrier between *referencing* and _holding_ an object.
 Requesting an object from a realizer merely schedules it to be loaded at some future time.
 When you request an object, Xe drags its feet.
 It does this to accumulate large groups of objects to realize at once.
