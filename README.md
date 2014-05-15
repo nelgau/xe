@@ -35,7 +35,7 @@ If you request an object from a realizer, it will provide it immediately, at any
 You can return the object, store it in a data structure or pass it as an argument to a method.
 For all intents, this is the object you requested and behaves identically.
 
-Conceptually, realizers act as the barrier between *referencing* and *holding* an object.
+Realizers act as the barrier between *referencing* and *holding* an object.
 When you request an object, it merely schedules the realization at some future time.
 When you request an object, Xe drags its feet for as long as possible.
 It does this to accumulate large groups of objects to realize at once.
@@ -45,6 +45,5 @@ When it decides that realizing the object is the best course of action,
 control will resume where it left off and you will find yourself holding the object.
 
 Enumerators take this further by *introducing* oportunities to reorder operations.
-
 
 
