@@ -2,6 +2,11 @@ require 'spec_helper'
 
 describe Xe::Enumerator::Delegators do
 
+  def self.delegated_methods
+    Enumerable.instance_methods -
+      Xe::Enumerator::Implementation.instance_methods
+  end
+
   subject do
     Xe::Enumerator.new(context, enumerable, options)
   end
@@ -27,7 +32,7 @@ describe Xe::Enumerator::Delegators do
   let(:enum_args)  { [3, 4, 5] }
   let(:enum_proc)  { Proc.new { |x| x } }
 
-  (Enumerable.instance_methods - [:map]).each do |method|
+  delegated_methods.each do |method|
     describe "##{method.to_s}" do
 
       let(:method) { method }

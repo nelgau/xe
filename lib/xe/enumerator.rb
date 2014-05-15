@@ -1,4 +1,6 @@
+require 'xe/enumerator/worker'
 require 'xe/enumerator/strategy'
+require 'xe/enumerator/implementation'
 require 'xe/enumerator/delegators'
 
 module Xe
@@ -27,6 +29,7 @@ module Xe
     # interface. Every method is overridden and delegated.
     include Enumerable
     include Delegators
+    include Implementation
 
     attr_reader :context
     attr_reader :enumerable
@@ -43,17 +46,6 @@ module Xe
       @tag = options[:tag]
     end
 
-    # Returns a new array from the results of running the block once for every
-    # element in the enumerable. Substitutes proxies for unrealized values.
-    def map(&blk)
-      run_mapper(&blk)
-    end
-
-    # Similar to map, but returns the original values.
-    def each(&blk)
-      run_mapper { |o| blk.call(o); o }
-    end
-
     def inspect
       is_xe_enumerator = enumerable.is_a?(Xe::Enumerator)
       contents = is_xe_enumerator ? "(nested)" : enumerable.inspect
@@ -62,25 +54,6 @@ module Xe
 
     def to_s
       inspect
-    end
-
-    private
-
-    # Runs a computation, returning a value, within a single fiber. If the
-    # fiber blocks on a realization, a proxy is returned instead.
-    def run_evaluator(&blk)
-      # Serialize execution when the context is disabled.
-      return blk.call if !context.enabled?
-      Strategy::Evaluator.(context, &blk)
-    end
-
-    # Runs an enumeration, returning an array of independent values, within a
-    # succession of fibers. If some fiber blocks on a realization, a proxy is
-    # substituted for that value.
-    def run_mapper(&blk)
-      # Serialize execution when the context is disabled.
-      return enumerable.map(&blk) if !context.enabled?
-      Strategy::Mapper.(context, enumerable, &blk)
     end
   end
 end

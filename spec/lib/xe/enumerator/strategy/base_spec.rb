@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Xe::Enumerator::Strategy::Base do
-  include Xe::Test::Mock::Enumerator::Strategy
+  include Xe::Test::Mock::Enumerator
 
   subject { Xe::Enumerator::Strategy::Base.new(context) }
 
