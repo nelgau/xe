@@ -1,23 +1,26 @@
 require 'spec_helper'
 
 describe Xe::Enumerator::Strategy::Evaluator do
-  include Xe::Test::Mock::Enumerator::Strategy
+  include Xe::Test::Mock::Enumerator
 
   subject { Xe::Enumerator::Strategy::Evaluator.new(context, &value_proc) }
 
-  let(:context)       { new_context_mock(&finalize_proc) }
-  let(:value_proc)    { Proc.new { value } }
-  let(:finalize_proc) { Proc.new {} }
-  let(:value)         { 4 }
+  # Don't use a real context here so we can test these strategy is isolation,
+  # without invoking the full complexity of the gem (like scheduling, policies
+  # and the loom).
 
-  let(:deferrable)    { Xe::Deferrable.new }
+  let(:context)      { new_context_mock }
+  let(:value_proc)   { Proc.new { value } }
+  let(:value)        { 4 }
 
-  let(:wait_target)   { Xe::Target.new(deferrable, 0, 0) }
-  let(:wait_value)    { 5 }
+  let(:deferrable)   { Xe::Deferrable.new }
 
-  let(:blocking_proc) { Proc.new { context.wait(wait_target) } }
+  let(:wait_target)  { Xe::Target.new(deferrable, 0, 0) }
+  let(:wait_value)   { 5 }
 
-  def dispatch_blocking_result
+  let(:waiting_proc) { Proc.new { context.wait(wait_target) } }
+
+  def dispatch_waiting_result
     context.dispatch(wait_target, wait_value)
   end
 
@@ -43,91 +46,26 @@ describe Xe::Enumerator::Strategy::Evaluator do
 
   describe '#call' do
 
-    it "begins a fiber" do
-      expect(context).to receive(:begin_fiber).once.and_call_original
-      subject.call
-    end
-
-    context "within a new fiber" do
-      let(:value_proc) { Proc.new { @eval_fiber = ::Fiber.current; value } }
-
-      it "calls value_proc" do
-        subject.call
-        expect(@eval_fiber).to eq(context.last_fiber)
-      end
-    end
-
-    context "when eval_proc doesn't wait" do
-      let(:value_proc) { Proc.new { value } }
-      let(:value)      { 4 }
-
+    context "when value_proc doesn't wait" do
       it "returns the expected result" do
+        expect(subject.call).to eq(value)
+      end
+    end
+
+    context "when value_proc waits" do
+      let(:value_proc) { waiting_proc }
+
+      it "returns a proxy in place of the result" do
         result = subject.call
-        expect(result).to eq(value)
+        expect(is_proxy?(result)).to be_true
       end
 
-      it "allows the fiber to terminate" do
-        subject.call
-        expect(context.last_fiber).to_not be_alive
-      end
-    end
-
-    context "when eval_proc waits once" do
-      let(:value_proc)    { blocking_proc }
-      let(:finalize_proc) { Proc.new { dispatch_blocking_result } }
-
-      before do
-        @result = subject.call
-      end
-
-      it "substitutes a proxy for the result" do
-        expect(is_proxy?(@result)).to be_true
-      end
-
-      context "when the attended (waited) value becomes available" do
-        it "calls dispatch on the context" do
-          expect(context).to receive(:dispatch)
-          context.dispatch(wait_target, wait_value)
-        end
-
-        it "resolves the subject of the proxy" do
-          context.dispatch(wait_target, wait_value)
-          expect(@result.subject).to eq(wait_value)
-        end
-      end
-
-      context "when there is a fiber waiting on the result" do
-        before do
-          @resolve_value = nil
-          @resolve_fiber = context.begin_fiber do
-            @resolve_value = @result.resolve
-          end
-        end
-
-        it "releases the fiber" do
-          context.dispatch(wait_target, wait_value)
-          expect(@resolve_fiber).to_not be_alive
-        end
-
-        it "releases the fiber with the correct value" do
-          context.dispatch(wait_target, wait_value)
-          expect(@resolve_value).to eq(wait_value)
-        end
-      end
-
-      context "when outside of a managed fiber" do
-        it "calls finalize! on the context when the proxy is resolved" do
-          expect(context).to receive(:finalize!)
-          @result.resolve
-        end
-
-        it "sets the subject of the proxy when the proxy is resolved" do
-          @result.resolve
-          expect(@result.subject).to eq(wait_value)
-        end
+      it "sets the value of the proxy after waiting" do
+        result = subject.call
+        dispatch_waiting_result
+        expect(result.subject).to eq(wait_value)
       end
     end
-
   end
 
 end

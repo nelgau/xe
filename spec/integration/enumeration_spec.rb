@@ -69,53 +69,6 @@ describe "Xe - Garbage Collection (Enumeration)" do
       end
     end
 
-    context "with #inject" do
-      context "and realized values (coercion)" do
-        expect_output!
-
-        let(:input)  { [1, 2, 3] }
-        let(:output) { 6 }
-
-        def invoke
-          Xe.context do
-            Xe.enum(input).inject(0) do |sum, x|
-              sum + x
-            end
-          end
-        end
-      end
-
-      context "and realized values (explicit)" do
-        expect_output!
-
-        let(:input)  { [1, 2, 3] }
-        let(:output) { 9 }
-
-        def invoke
-          Xe.context do
-            Xe.enum(input).inject(0) do |sum, x|
-              sum + realizer_value[x].to_i
-            end
-          end
-        end
-      end
-
-      context "and realized values (raises)" do
-        expect_exception!
-
-        let(:input)  { [1, 2, 3] }
-
-        def invoke
-          Xe.context do
-            Xe.enum(input).inject(0) do |sum, x|
-              raise_exception if x == 2
-              sum + realizer_value[x].to_i
-            end
-          end
-        end
-      end
-    end
-
   end
 
   #
@@ -532,6 +485,61 @@ describe "Xe - Garbage Collection (Enumeration)" do
             end
             result.map do |x|
               x.to_i
+            end
+          end
+        end
+      end
+    end
+
+  end
+
+  #
+  # Injecting Enumeration
+  #
+
+  context "with an injecting enumerator" do
+
+    context "with #inject" do
+      context "and realized values (coercion)" do
+        expect_output!
+
+        let(:input)  { [1, 2, 3] }
+        let(:output) { 6 }
+
+        def invoke
+          Xe.context do
+            Xe.enum(input).inject(0) do |sum, x|
+              sum + x
+            end
+          end
+        end
+      end
+
+      context "and realized values (explicit)" do
+        expect_output!
+
+        let(:input)  { [1, 2, 3] }
+        let(:output) { 9 }
+
+        def invoke
+          Xe.context do
+            Xe.enum(input).inject(0) do |sum, x|
+              sum + realizer_value[x].to_i
+            end
+          end
+        end
+      end
+
+      context "and realized values (raises)" do
+        expect_exception!
+
+        let(:input)  { [1, 2, 3] }
+
+        def invoke
+          Xe.context do
+            Xe.enum(input).inject(0) do |sum, x|
+              raise_exception if x == 2
+              sum + realizer_value[x].to_i
             end
           end
         end

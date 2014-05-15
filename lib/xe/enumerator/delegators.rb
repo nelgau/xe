@@ -1,5 +1,9 @@
 module Xe
   class Enumerator
+    # This module is a catch-all for enumerations that haven't been implemented
+    # in terms of strategies. It simply delegates to the standard method in the
+    # enumerable interface, wrapped in a fiber, and returns a proxy if
+    # evaluating the enumeration would block.
     module Delegators
       # Returns a single-valued result. If the computation blocks on the
       # realization of a deferred value, a proxy is returned.

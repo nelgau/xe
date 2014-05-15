@@ -1,10 +1,15 @@
 require 'spec_helper'
 
-describe Xe::Enumerator::Strategy::Mapper do
+describe Xe::Enumerator::Strategy::Injector do
   include Xe::Test::Mock::Enumerator
 
   subject do
-    Xe::Enumerator::Strategy::Mapper.new(context, enumerable, &map_proc)
+    Xe::Enumerator::Strategy::Injector.new(
+      context,
+      enumerable,
+      initial,
+      &inject_proc
+    )
   end
 
   # Don't use a real context here so we can test these strategy is isolation,
@@ -12,18 +17,19 @@ describe Xe::Enumerator::Strategy::Mapper do
   # and the loom).
 
   let(:context)     { new_context_mock }
-  let(:map_proc)    { double_proc }
+  let(:inject_proc) { sum_proc }
 
   let(:enumerable)  { (0...6).to_a }
-  let(:double_proc) { Proc.new { |i| i * 2 } }
-  let(:expected)    { enumerable.map(&double_proc) }
+  let(:initial)     { 22 }
+  let(:sum_proc)    { Proc.new { |acc, i| acc + i } }
+  let(:expected)    { enumerable.inject(initial, &sum_proc) }
 
   let(:deferrable)  { Xe::Deferrable.new }
 
   let(:all_wait_proc) do
-    Proc.new do |index|
+    Proc.new do |acc, index|
       value = wait_for_index(index)
-      double_proc.call(value)
+      sum_proc.call(acc, value)
     end
   end
 
@@ -54,12 +60,12 @@ describe Xe::Enumerator::Strategy::Mapper do
       expect(subject.enumerable).to eq(enumerable)
     end
 
-    it "sets the map_proc attribute" do
-      expect(subject.map_proc).to eq(map_proc)
+    it "sets the inject_proc attribute" do
+      expect(subject.inject_proc).to eq(inject_proc)
     end
 
-    context "when map_proc is not given" do
-      let(:map_proc) { nil }
+    context "when inject_proc is not given" do
+      let(:inject_proc) { nil }
 
       it "raises ArgumentError" do
         expect { subject }.to raise_error(ArgumentError)
@@ -71,29 +77,25 @@ describe Xe::Enumerator::Strategy::Mapper do
   describe '#call' do
 
     context "when map_proc doesn't wait" do
-      let(:map_proc) { double_proc }
+      let(:inject_proc) { sum_proc }
 
-      it "returns the mapping of map_proc over the enumerable" do
+      it "returns the fold of inject_proc over the enumerable" do
         expect(subject.call).to eq(expected)
       end
     end
 
-    context "when map_proc waits for each computation" do
-      let(:map_proc) { all_wait_proc }
+    context "when inject_proc waits for each computation" do
+      let(:inject_proc) { all_wait_proc }
 
       it "returns a proxy in place of all results" do
-        results = subject.call
-        subject.results.each do |result|
-          expect(is_proxy?(result)).to be_true
-        end
+        result = subject.call
+        expect(is_proxy?(result)).to be_true
       end
 
       it "sets the value of the proxy after waiting" do
-        results = subject.results
+        result = subject.call
         dispatch_all_wait_results
-        results.each_with_index do |result, index|
-          expect(result.subject).to eq(expected[index])
-        end
+        expect(result.subject).to eq(expected)
       end
     end
 
