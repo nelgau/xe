@@ -33,7 +33,7 @@ module Xe::Test
         @depth = depth
       end
 
-      def perform(group)
+      def perform(group, key)
         return group if depth == 0
         realizer = DrunkWalk.for_depth(depth - 1)
         enum = group.map { |id| (0...WIDTH).map { |i| PRIME2 * id + i } }

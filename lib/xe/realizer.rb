@@ -1,4 +1,5 @@
 require 'xe/realizer/base'
+require 'xe/realizer/cacheable'
 require 'xe/realizer/proc'
 require 'xe/realizer/id'
 

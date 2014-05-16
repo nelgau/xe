@@ -48,8 +48,8 @@ describe Xe::Realizer::Base do
       # We don't want to test the actual relationship between the realizer base
       # class and the context, only the interface.
       Xe::Context.stub(:current) { context }
-      # Additionally, we don' want to resolve a proxy in our tests. Only verify
-      # that Proxy.resolve is called and that the returned value is used.
+      # Additionally, we don't want to resolve a proxy in our tests. Only
+      # verify that Proxy.resolve is called and that the returned value is used.
       Xe::Proxy.stub(:resolve) { proxy_id }
 
       subject.stub(:perform) { results }
@@ -67,6 +67,12 @@ describe Xe::Realizer::Base do
       it "calls defer on the current context" do
         expect(context).to receive(:defer).with(subject, proxy_id, group_key)
         subject[1]
+      end
+
+      it "returns the proxy from Context#defer" do
+        proxy = double(Xe::Proxy)
+        context.stub(:defer) { proxy }
+        expect(subject[1]).to eq(proxy)
       end
     end
 
