@@ -219,32 +219,6 @@ describe Xe::Realizer::Cacheable do
           expect(cache).to receive(:set_multi).with(multi_hash, multi_options)
           invoke_call
         end
-
-        context "when a prefix is given" do
-          let(:prefix) { 'ccc' }
-
-          it "sets the values in the cache" do
-            expect(cache).to receive(:set_multi).with(multi_hash, multi_options)
-            invoke_call
-          end
-        end
-
-        context "when cache_key is overridden" do
-          let(:realizer_class) do
-            Class.new(Xe::Realizer::Base) do
-              include Xe::Realizer::Cacheable
-
-              def cache_key(id)
-                (id * 10).to_s
-              end
-            end
-          end
-
-          it "sets the values in the cache" do
-            expect(cache).to receive(:set_multi).with(multi_hash, multi_options)
-            invoke_call
-          end
-        end
       end
 
       context "when one value cannot be cached" do
