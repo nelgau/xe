@@ -8,7 +8,7 @@ module Xe::Test
       end
 
       # Map the values to their integer value multiplied by a constant.
-      def perform(enum)
+      def perform(enum, key)
         enum.each_with_object({}) do |i, h|
           h[i] = i.to_i * factor
         end

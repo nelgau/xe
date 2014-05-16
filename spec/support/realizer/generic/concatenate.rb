@@ -8,7 +8,7 @@ module Xe::Test
       end
 
       # Map the values to their string representation with a constant suffix.
-      def perform(enum)
+      def perform(enum, key)
         enum.each_with_object({}) do |i, h|
           h[i] = i.to_s + string
         end

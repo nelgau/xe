@@ -4,13 +4,16 @@ require 'xe/configuration'
 require 'xe/singletons'
 require 'xe/utility'
 require 'xe/tracer'
-require 'xe/proxy'
-require 'xe/loom'
+
 require 'xe/models'
 require 'xe/context'
 require 'xe/policy'
+require 'xe/proxy'
+require 'xe/loom'
+
 require 'xe/realizer'
 require 'xe/enumerator'
+require 'xe/cache'
 
 module Xe
   extend Singletons

@@ -12,8 +12,7 @@ module Xe
       end
 
       # If an active context exists, this method returns a proxy for the
-      # realized value with the given id. If no key is given, the #group_key
-      # method is invoked to provide one.
+      # realized value with the given id.
       def [](id)
         # Block on the realization of the id. This enforces isolation between
         # values (which can be proxied and realized lazily) and the manner
@@ -37,15 +36,14 @@ module Xe
       # (in the same order as the group). By default, the realizer group is
       # coerced to an array before invoking. If you wish to preserve the
       # type of the group instance (as returned by the #new_group method), you
-      # can override the #group_as_array method to return `false`. If your
-      # realizer subclass doesn't group ids by key, you may define #perform
-      # to take a single argument (the group enumerable).
-      def perform(group, key=nil)
+      # can override the #group_as_array method to return `false`.
+      def perform(group, key)
         raise NotImplementedError
       end
 
-      # Override this method to specify the default key by which to group the
-      # given id. Each unique key will create a group using #new_group.
+      # Override this method to specify a key by which to group the given id.
+      # Each unique key will create a group using #new_group. You can also
+      # leave this as is to collect all keys into a single group.
       def group_key(id)
         nil
       end
@@ -75,14 +73,10 @@ module Xe
       # @protected
       # Realize a group of ids as a hash from ids to values. This is the
       # designated entry point for realization via the context.
-      def call(group, key=nil)
+      def call(group, key)
         # Optionally coerce the group to an array.
         group = group.to_a if group_as_array?
-        # Support overridden #perform implementations with either signature.
-        # Not all realizers require grouping and for some use cases, the
-        # argument might be confusing.
-        @perform_arity ||= method(:perform).arity
-        results = (@perform_arity == 2) ? perform(group, key) : perform(group)
+        results = perform(group, key)
         # Apply post-processing to the result set.
         results = transform(group, results)
         # The client of this method only supports maps, raise otherwise.
@@ -90,7 +84,7 @@ module Xe
         results
       end
 
-      # Memoize the hash. This value is used to computie the hash of target.
+      # Memoize the hash. This value is used to compute the hash of target.
       # Profiling shows that this is a small, but significant win.
       def hash
         @hash ||= super
@@ -104,7 +98,7 @@ module Xe
         inspect
       end
 
-      protected
+      private
 
       # Assumes that the results were returned in the enumeration order of the
       # group argument. Zips both together and constructs a hash.

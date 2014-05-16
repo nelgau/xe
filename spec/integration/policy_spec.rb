@@ -103,7 +103,7 @@ describe "Xe - Realization Order" do
         expect(event_tracer.events.length).to eq(realizer_count)
       end
 
-      it "selecting the shallowest realization first" do
+      it "selects the shallowest realization first" do
         invoke
         expect(event_tracer.events[0].deferrable).to eq(realizers[0])
         expect(event_tracer.events[0].length).to eq(id_count)
