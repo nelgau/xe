@@ -1,5 +1,6 @@
 require 'xe/enumerator/worker'
 require 'xe/enumerator/strategy'
+require 'xe/enumerator/launchers'
 require 'xe/enumerator/implementation'
 require 'xe/enumerator/delegators'
 
@@ -9,8 +10,8 @@ module Xe
   # realization. Some enumerations operate on each value independently (like
   # each and map) while others necessarily serialize execution via a data-
   # dependent accumulator (like inject) or early termination (like any?). These
-  # cases are modeled by two strategies, evaluator and mapper, which
-  # respectively use a single- or multi-fiber operation to compute the result.
+  # cases are modeled by three strategies, evaluator, mapper and injecor, which
+  # use a single- or multi-fiber operation to compute the result.
   #
   # To maximize concurrency (and the potential for large, batch realizations),
   # you should always prefer an enumeration that has no serializing
@@ -29,6 +30,7 @@ module Xe
     # interface. Every method is overridden and delegated.
     include Enumerable
     include Delegators
+    include Launchers
     include Implementation
 
     attr_reader :context

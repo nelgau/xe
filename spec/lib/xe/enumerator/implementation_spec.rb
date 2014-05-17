@@ -26,42 +26,6 @@ describe Xe::Enumerator::Implementation do
   let(:map_proc)     { Proc.new { |x| x + 1 } }
   let(:each_proc)    { Proc.new { |x| x } }
 
-  describe '#initialize' do
-
-    context "when no context is given" do
-      let(:context) { nil }
-
-      it "raises Xe::NoContextError" do
-        expect { subject }.to raise_error(Xe::NoContextError)
-      end
-    end
-
-    it "sets the context attribute" do
-      expect(subject.context).to eq(context)
-    end
-
-    it "sets the enumerable attribute" do
-      expect(subject.enumerable).to eq(enumerable)
-    end
-
-    it "sets the options attribute" do
-      expect(subject.options).to eq(options)
-    end
-
-    context "when the tag options is given" do
-      let(:tag) { 'foo' }
-
-      before do
-        options.merge!(:tag => tag)
-      end
-
-      it "sets the tag attribute to the given" do
-        expect(subject.tag).to eq(tag)
-      end
-    end
-
-  end
-
   describe '#map' do
 
     let(:expected_result) { enumerable.map(&map_proc) }
