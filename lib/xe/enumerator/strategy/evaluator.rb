@@ -27,15 +27,20 @@ module Xe
 
         # Evaluates value_proc within a single fiber and returns the value as
         # the result. If the computation blocks, a proxy object is returned.
-        def call
+        def perform
           @worker.call
           @result
         end
 
+        # Evaluates value_proc immediately and returns the result.
+        def perform_serial
+          @value_proc.call
+        end
+
         private
 
-        def set_result(obj)
-          @result = obj
+        def set_result(value, object)
+          @result = value
         end
       end
     end

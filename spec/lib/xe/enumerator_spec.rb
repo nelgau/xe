@@ -35,8 +35,8 @@ describe Xe::Enumerator do
       expect(subject.context).to eq(context)
     end
 
-    it "sets the enumerable attribute" do
-      expect(subject.enumerable).to eq(enumerable)
+    it "sets the enum attribute" do
+      expect(subject.enum).to eq(enumerable)
     end
 
     it "sets the options attribute" do

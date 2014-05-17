@@ -381,7 +381,7 @@ describe Xe::Context do
     end
 
     it "returns an enumerator for the enumerable" do
-      expect(new_enumerator.enumerable).to eql(enumerable)
+      expect(new_enumerator.enum).to eql(enumerable)
     end
 
     context "when enumerator options are given" do

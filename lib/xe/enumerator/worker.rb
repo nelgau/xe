@@ -20,7 +20,6 @@ module Xe
         @compute_proc = options[:compute_proc] || lambda { |object| object }
         @results_proc = options[:results_proc] || lambda { |result| }
 
-        @consumer = ::Enumerator.new(enumerable)
         @next_index = 0
         @done = false
       end
@@ -67,7 +66,7 @@ module Xe
             begin
               # Consume a new object from the enumerable. If there are no
               # objects left, it raises StopIteration and proceeds to (2).
-              object = @consumer.next
+              object = consumer.next
               index = @next_index
               @next_index += 1
             rescue StopIteration
@@ -79,7 +78,7 @@ module Xe
             # Evaluate compute_proc with call. If the proc attempts to
             # realize a deferred value, the invocation will not return
             # immediately and instead transfer control to (3).
-            value = @compute_proc.call(object)
+            value = @compute_proc.call(object, index)
 
             # (4) The value is computed. After reaching here, it might be the
             # case that we substituted a proxy for the result.
@@ -96,7 +95,7 @@ module Xe
             else
               # Since we didn't proxy the result, the fiber is responsible for
               # emitting the new value to results_proc.
-              @results_proc.call(value)
+              @results_proc.call(value, object)
             end
           end
         end
@@ -125,8 +124,16 @@ module Xe
           # Record that we substituted a proxy.
           did_proxy = true
           # Emit the the proxy to results_proc.
-          @results_proc.call(proxy)
+          @results_proc.call(proxy, object)
         end
+      end
+
+      private
+
+      # Returns a memoized enumerator for consuming elements. Don't create
+      # this during initialization in case the enumerable itself is a proxy.
+      def consumer
+        @consumer ||= ::Enumerator.new(@enumerable)
       end
     end
   end

@@ -51,7 +51,7 @@ describe Xe::Enumerator::Strategy::Mapper do
     end
 
     it "sets the enumerable attribute" do
-      expect(subject.enumerable).to eq(enumerable)
+      expect(subject.enum).to eq(enumerable)
     end
 
     it "sets the map_proc attribute" do
