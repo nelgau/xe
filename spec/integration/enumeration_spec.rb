@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Xe - Garbage Collection (Enumeration)" do
+describe "Xe - Enumeration" do
   include Xe::Test::Scenario
 
   let(:scenario_options) { {

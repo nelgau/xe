@@ -34,23 +34,23 @@ module Xe
     include Implementation
 
     attr_reader :context
-    attr_reader :enumerable
+    attr_reader :enum
     attr_reader :options
     attr_reader :tag
 
     # Initializes an instance of a defferable-aware enumerator. You can pass
     # the `:tag` option to differentiate enumerators while debugging.
-    def initialize(context, enumerable, options={})
+    def initialize(context, enum, options={})
       raise NoContextError if context.nil?
       @context = context
-      @enumerable = enumerable
+      @enum = enum
       @options = options
       @tag = options[:tag]
     end
 
     def inspect
-      is_xe_enumerator = enumerable.is_a?(Xe::Enumerator)
-      contents = is_xe_enumerator ? "(nested)" : enumerable.inspect
+      is_xe_enumerator = enum.is_a?(Xe::Enumerator)
+      contents = is_xe_enumerator ? "(nested)" : enum.inspect
       "#<#{self.class.name} #{contents} (#{tag || '...'})>"
     end
 

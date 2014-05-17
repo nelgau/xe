@@ -7,22 +7,23 @@ module Xe
       # block to begin execution immediately while still preserving the
       # serialization of the accumulated result.
       class Injector < Base
-        attr_reader :enumerable
+        attr_reader :enum
         attr_reader :inject_proc
 
-        def initialize(context, enumerable, initial, &inject_proc)
+        def initialize(context, enum, initial, &inject_proc)
           raise ArgumentError, "No block given" unless block_given?
           super(context)
 
-          @enumerable = enumerable
+          @enum = enum
           @inject_proc = inject_proc
-          @result = initial
+          @initial = initial
+          @last_result = initial
 
           @worker = Worker.new(
             @context,
-            @enumerable,
+            @enum,
             :compute_proc => method(:compute),
-            :results_proc => method(:set_result)
+            :results_proc => method(:set_last_result)
           )
         end
 
@@ -30,19 +31,25 @@ module Xe
         # succession of fibers and returns the result. If any invocation of
         # inject_proc blocks, a proxy object is returned in place of a value
         # and passed into the next invocation.
-        def call
+        def perform
           @worker.call
-          @result
+          @last_result
+        end
+
+        # Evaluates inject_proc as a fold over the enumerable immediately
+        # and returns the result.
+        def perform_serial
+          @enum.inject(@initial, &@inject_proc)
         end
 
         private
 
-        def compute(obj)
-          @inject_proc.call(@result, obj)
+        def compute(object, index)
+          @inject_proc.call(@last_result, object)
         end
 
-        def set_result(obj)
-          @result = obj
+        def set_last_result(value, object)
+          @last_result = value
         end
       end
     end
