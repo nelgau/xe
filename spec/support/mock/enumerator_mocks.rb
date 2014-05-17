@@ -2,8 +2,8 @@ module Xe::Test
   module Mock
     module Enumerator
       # Returns a new minimal context implementation.
-      def new_context_mock(&finalize_proc)
-        Context.new(&finalize_proc)
+      def new_context_mock(options={}, &finalize_proc)
+        Context.new(options, &finalize_proc)
       end
 
       def new_proxy_mock(&resolve_proc)
@@ -25,11 +25,16 @@ module Xe::Test
         attr_reader :proxies
         attr_reader :waiters
 
-        def initialize(&finalize_proc)
+        def initialize(options={}, &finalize_proc)
+          @enabled = options.fetch(:enabled, true)
           @finalize_proc = finalize_proc || Proc.new {}
           @root_fiber = ::Fiber.current
           @proxies = {}
           @waiters = {}
+        end
+
+        def enabled?
+          !!@enabled
         end
 
         def finalize!
