@@ -3,9 +3,9 @@ module Xe
     # These are implementations of methods in the enumerable interface for
     # which it's possible to give a more efficient solution with fibers. The
     # key idea is that, even if the body of the proc blocks on some
-    # realization, we still want to start execution -- it may reveal new
-    # deferred values. We gain no benefit from being force to execute the
-    # enumeration serially.
+    # realization, we still want to start execution of the rest -- it may
+    # reveal new deferred values. We gain no benefit from being force to
+    # execute the enumeration serially.
     module Implementation
       # Returns a new array from the results of running the block once for each
       # element in the enumerable. If no block is given, an enumerator is
@@ -48,18 +48,7 @@ module Xe
       def all?(&blk)
         blk ||= Proc.new { |o| o }
         run_injector(true) do |acc, o|
-          acc && !!blk.call(o)
-        end
-      end
-
-      # Passes each element of the collection to the given block. The method
-      # returns true if the block never returns true. If the block is
-      # not given, it adds an implicit block of {|obj| obj}.
-      # Substitutes a proxy for an unrealized return value.
-      def none?(&blk)
-        blk ||= Proc.new { |o| o }
-        run_injector(true) do |acc, o|
-          acc && !blk.call(o)
+          !!acc && !!blk.call(o)
         end
       end
 
@@ -70,7 +59,33 @@ module Xe
       def any?(&blk)
         blk ||= Proc.new { |o| o }
         run_injector(false) do |acc, o|
-          acc || !!blk.call(o)
+          !!acc || !!blk.call(o)
+        end
+      end
+
+      # Passes each element of the collection to the given block. The method
+      # returns true if the block never returns true. If the block is
+      # not given, it adds an implicit block of {|obj| obj}.
+      # Substitutes a proxy for an unrealized return value.
+      def none?(&blk)
+        blk ||= Proc.new { |o| o }
+        run_injector(true) do |acc, o|
+          !!acc && !blk.call(o)
+        end
+      end
+
+      # Returns the number of items in enum, where size is called if it
+      # responds to it, otherwise the items are counted through enumeration. If
+      # a block is given, counts the number of elements yielding a true value.
+      # This implementation doesn't support the argumented form. Substitutes a
+      # proxy for an unrealized return value.
+      def count(*args, &blk)
+        # If we have an argument, delegate this to the evaluator. We could
+        # support this case later; it just makes the code messier.
+        return super if args.length > 0
+        blk ||= Proc.new { |o| o }
+        run_injector(0) do |acc, o|
+          blk.call(o) ? acc + 1 : acc
         end
       end
 
@@ -81,19 +96,6 @@ module Xe
       def one?(&blk)
         # Slightly tricky. This operation is two fibers deep.
         run_evaluator { count(&blk) == 1 }
-      end
-
-      # Returns the number of items in enum, where size is called if it
-      # responds to it, otherwise the items are counted through enumeration. If
-      # a block is given, counts the number of elements yielding a true value.
-      # This implementation doesn't support the argumented form. Substitutes a
-      # proxy for an unrealized return value.
-      def count(*args, &blk)
-        # If we have an argument or no block, delegate this to the evaluator.
-        return super if args.any? || !blk
-        run_injector(0) do |acc, o|
-          blk.call(o) ? acc + 1 : acc
-        end
       end
 
       # Calls the block with two arguments, the item and its index, for each
@@ -121,60 +123,21 @@ module Xe
       # Returns true if any element of the enumerable equals obj. Equality#
       # uses #==. Substitutes a proxy for an unrealized return value.
       def include?(obj)
-        run_injector(false) { |acc, o| acc || (o == obj) }
+        run_injector(false) do |acc, o|
+          !!acc || (o == obj)
+        end
       end
 
       alias_method :member?, :include?
 
-      # Returns the object in the enumerable with the maximum value. The block
-      # is invoked with a pair (a, b) and should return something analogous to
-      # a <=> b. With no block, objects are assumed to implement comparable.
+      # Returns an array for all elements of the enumerable for which block is
+      # true. If no block is given, an enumerator is returned instead.
       # Substitutes a proxy for an unrealized return value.
-      def max(&blk)
-        blk ||= Proc.new { |a, b| a <=> b }
-        run_injector(nil) do |acc, o|
-          next o if !acc
-          blk.call(o, acc) > 0 ? o : acc
-        end
-      end
-
-      # Returns the object in the enumerable that gives the maximum value from
-      # the given block. If no block is given, an enumerator is returned
-      # instead. Substitutes a proxy for an unrealized return value.
-      def max_by(&blk)
+      def select(&blk)
         # If no block was given, return the enumerator.
         return self if !blk
-        run_injector(nil) do |acc, o|
-          next o if !acc
-          # This is not optimal.
-          o_val, acc_val = blk.call(acc), blk.call(o)
-          (o_val <=> acc_val) > 0 ? o : acc
-        end
-      end
-
-      # Returns the object in the enumerable with the minimum value. The block
-      # is invoked with a pair (a, b) and should return something analogous to
-      # a <=> b. With no block, objects are assumed to implement comparable.
-      # Substitutes a proxy for an unrealized return value.
-      def min(&blk)
-        blk ||= Proc.new { |a, b| a <=> b }
-        run_injector(nil) do |acc, o|
-          next o if !acc
-          blk.call(o, acc) > 0 ? o : acc
-        end
-      end
-
-      # Returns the object in the enumerable that gives the minimum value from
-      # the given block. If no block is given, an enumerator is returned
-      # instead. Substitutes a proxy for an unrealized return value.
-      def min_by(&blk)
-        # If no block was given, return the enumerator.
-        return self if !blk
-        run_injector(nil) do |acc, o|
-          next o if !acc
-          # This is not optimal.
-          o_val, acc_val = blk.call(acc), blk.call(o)
-          (o_val <=> acc_val) > 0 ? o : acc
+        each_with_object([]) do |o, acc|
+          acc << o if blk.call(o)
         end
       end
 
@@ -189,15 +152,13 @@ module Xe
         end
       end
 
-      # Returns an array for all elements of the enumerable for which block is
-      # true. If no block is given, an enumerator is returned instead.
-      # Substitutes a proxy for an unrealized return value.
-      def select(&blk)
-        # If no block was given, return the enumerator.
-        return self if !blk
-        each_with_object([]) do |o, acc|
-          acc << o if blk.call(o)
-        end
+      private
+
+      # Returns a new Xe enumerator that wraps the given enumerable. This
+      # method is used to return a enumerable-conforming object from certain
+      # enumerations (like #each_with_index and #each_with_object).
+      def wrap(new_enum)
+        Xe::Enumerator.new(context, new_enum)
       end
     end
   end

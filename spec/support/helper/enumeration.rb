@@ -8,7 +8,7 @@ module Xe::Test
           let(:enabled) { true }
           let(:tracing) { false }
 
-          let(:count)      { 6 }
+          let(:count)      { 20 }
           let(:enumerable) { (0...count).to_a }
           let(:deferrable) { Xe::Deferrable.new }
 
@@ -60,14 +60,53 @@ module Xe::Test
         context.proxy(target, &force_proc)
       end
 
-      def dispatch_for_index(index)
+      def dispatch_for_index(index, value=index)
         target = target_for_index(index)
-        context.dispatch(target, index)
+        context.dispatch(target, value)
       end
 
       def release_enumerable_waiters
         each_index do |index|
-          dispatch_for_index(index)
+          value = enumerable[index]
+          dispatch_for_index(index, value)
+        end
+      end
+
+      # Substituting Proxies
+
+      def with_proxies(enum, options={})
+        type = options[:type]
+        return yield if !type || type == :none
+        # Conditionally, replace certain indexes in the enumerable with deferrals.
+        substitute_proxies(enum, options)
+        # Actually run the test.
+        result = yield
+        # Resolve any outstanding proxies.
+        release_enumerable_waiters
+        result
+      end
+
+      def substitute_proxies(enum, options={})
+        case options[:type]
+        when :one
+          substitute_proxy(enum, 2)
+        when :many
+          each_index do |index|
+            substitute_proxy(enum, index) if index % 2 == 0
+          end
+        when :all
+          each_index do |index|
+            substitute_proxy(enum, index)
+          end
+        end
+      end
+
+      def substitute_proxy(enum, index)
+        # Don't substitute for non-existent indexes.
+        return index >= enum.length
+        enum[index] = proxy_for_index(index) do
+          # These proxies should never force resolution.
+          raise Xe::Test::Error
         end
       end
     end
