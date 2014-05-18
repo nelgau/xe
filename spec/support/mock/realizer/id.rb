@@ -2,6 +2,7 @@ module Xe::Test
   module Mock
     module Realizer
       module Id
+        # Returns a new object with two interval values.
         def new_value_mock(id)
           Value.new(id)
         end

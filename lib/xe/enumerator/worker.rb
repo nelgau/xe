@@ -8,15 +8,18 @@ module Xe
     class Worker
       attr_reader :context
       attr_reader :enumerable
+      attr_reader :tag
 
       # Invoked with each object consumed from the enumerable.
-      attr_accessor :compute_proc
+      attr_reader :compute_proc
       # Invoked with the result of the computation, or a proxy.
-      attr_accessor :results_proc
+      attr_reader :results_proc
 
       def initialize(context, enumerable, options={})
         @context = context
         @enumerable = enumerable
+        @tag = options[:tag]
+
         @compute_proc = options[:compute_proc] || lambda { |object| object }
         @results_proc = options[:results_proc] || lambda { |result| }
 
@@ -126,6 +129,14 @@ module Xe
           # Emit the the proxy to results_proc.
           @results_proc.call(proxy, object)
         end
+      end
+
+      def inspect
+        "#<#{self.class.name} (#{@tag || '...'})>"
+      end
+
+      def to_s
+        inspect
       end
 
       private

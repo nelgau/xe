@@ -10,9 +10,9 @@ module Xe
         attr_reader :enum
         attr_reader :inject_proc
 
-        def initialize(context, enum, initial, &inject_proc)
+        def initialize(context, enum, initial, options={}, &inject_proc)
           raise ArgumentError, "No block given" unless block_given?
-          super(context)
+          super(context, options)
 
           @enum = enum
           @inject_proc = inject_proc
@@ -23,7 +23,8 @@ module Xe
             @context,
             @enum,
             :compute_proc => method(:compute),
-            :results_proc => method(:set_last_result)
+            :results_proc => method(:set_last_result),
+            :tag => :injector
           )
         end
 

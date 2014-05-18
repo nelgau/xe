@@ -18,6 +18,7 @@ require 'support/error'
 require 'support/scenario'
 require 'support/gc'
 
+require 'support/helper'
 require 'support/mock'
 require 'support/realizer'
 require 'support/enumeration'

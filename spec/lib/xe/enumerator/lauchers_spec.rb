@@ -1,17 +1,12 @@
 require 'spec_helper'
 
 describe Xe::Enumerator::Launchers do
+  include Xe::Test::Helper::Enumerator
   include Xe::Test::Mock::Enumerator
 
   subject do
     Xe::Enumerator.new(context, enumerable)
   end
-
-  let(:context) { new_context_mock(options) }
-  let(:options) { { :enabled => enabled } }
-  let(:enabled) { true }
-
-  let(:enumerable) { [1, 2, 3, 4] }
 
   describe '#run_evaluator' do
 

@@ -6,6 +6,7 @@ module Xe::Test
         Context.new(options, &finalize_proc)
       end
 
+      # Returns a new minimal proxy implementation.
       def new_proxy_mock(&resolve_proc)
         Proxy.new(&resolve_proc)
       end
@@ -27,6 +28,7 @@ module Xe::Test
 
         def initialize(options={}, &finalize_proc)
           @enabled = options.fetch(:enabled, true)
+          @tracing = options.fetch(:tracing, false)
           @finalize_proc = finalize_proc || Proc.new {}
           @root_fiber = ::Fiber.current
           @proxies = {}
@@ -37,16 +39,23 @@ module Xe::Test
           !!@enabled
         end
 
+        def tracing?
+          !!@tracing
+        end
+
         def finalize!
+          trace(:finalize_start)
           @finalize_proc.call
         end
 
         def dispatch(target, value)
+          trace(:value_dispatched, target, value)
           resolve(target, value)
           release(target, value)
         end
 
         def proxy(target, &force_proc)
+          trace(:proxy_new, target)
           proxy = Proxy.new { wait(target, &force_proc) }
           (proxies[target] ||= []) << proxy
           proxy
@@ -54,27 +63,39 @@ module Xe::Test
 
         def resolve(target, value)
           target_proxies = proxies.delete(target) || []
+          trace(:proxy_resolve, target, target_proxies.length)
           target_proxies.each { |p| p.set_subject(value) }
         end
 
         def begin_fiber(&blk)
+          trace(:fiber_new)
           @last_fiber = fiber = ::Fiber.new(&blk)
           fiber.resume
           fiber
         end
 
         def wait(target, &cantwait_proc)
+          trace(:fiber_wait, target)
           if @root_fiber != ::Fiber.current
             (waiters[target] ||= []) << ::Fiber.current
             ::Fiber.yield
           else
+            trace(:fiber_cantwait, target)
             cantwait_proc.call
           end
         end
 
         def release(target, value)
           target_waiters = waiters.delete(target) || []
+          trace(:fiber_release, target, target_waiters.length)
           target_waiters.each { |f| f.resume(value) }
+        end
+
+        def trace(type, *args)
+          return if !tracing?
+          string = "[trace] (#{type})"
+          string += " -- [#{args.inspect}]" if args.any?
+          puts string
         end
       end
 
@@ -107,6 +128,14 @@ module Xe::Test
 
         def method_missing(method, *args, &blk)
           resolve.send(method, *args, &blk)
+        end
+
+        def ==(other)
+          resolve == other
+        end
+
+        def hash
+          resolve.hash
         end
       end
     end
