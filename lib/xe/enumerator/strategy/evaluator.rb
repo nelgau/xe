@@ -8,9 +8,9 @@ module Xe
         attr_reader :value_proc
         attr_reader :result
 
-        def initialize(context, &value_proc)
+        def initialize(context, options={}, &value_proc)
           raise ArgumentError, "No block given" unless block_given?
-          super(context)
+          super(context, options)
 
           @value_proc = value_proc
           # Evaluate a single result.
@@ -21,7 +21,8 @@ module Xe
             context,
             @enumerable,
             :compute_proc => value_proc,
-            :results_proc => method(:set_result)
+            :results_proc => method(:set_result),
+            :tag => :evaluator
           )
         end
 

@@ -1,26 +1,23 @@
 require 'spec_helper'
 
 describe Xe::Enumerator::Strategy::Evaluator do
+  include Xe::Test::Helper::Enumerator
   include Xe::Test::Mock::Enumerator
 
-  subject { Xe::Enumerator::Strategy::Evaluator.new(context, &value_proc) }
+  subject do
+    Xe::Enumerator::Strategy::Evaluator.new(context, &value_proc)
+  end
 
-  # Don't use a real context here so we can test these strategy is isolation,
-  # without invoking the full complexity of the gem (like scheduling, policies
-  # and the loom).
+  let(:value_proc)   { nowait_proc }
 
-  let(:context)      { new_context_mock }
-  let(:value_proc)   { Proc.new { value } }
+  let(:nowait_proc)  { Proc.new { value } }
   let(:value)        { 4 }
 
-  let(:deferrable)   { Xe::Deferrable.new }
-
+  let(:waiting_proc) { Proc.new { context.wait(wait_target) } }
   let(:wait_target)  { Xe::Target.new(deferrable, 0, 0) }
   let(:wait_value)   { 5 }
 
-  let(:waiting_proc) { Proc.new { context.wait(wait_target) } }
-
-  def dispatch_waiting_result
+  def release_waiter
     context.dispatch(wait_target, wait_value)
   end
 
@@ -46,26 +43,49 @@ describe Xe::Enumerator::Strategy::Evaluator do
 
   describe '#call' do
 
-    context "when value_proc doesn't wait" do
-      it "returns the expected result" do
-        expect(subject.call).to eq(value)
+    context "when the context is enabled" do
+      let(:enabled) { true }
+
+      context "when value_proc doesn't wait" do
+        let(:value_proc)   { nowait_proc }
+
+        it "returns the expected result" do
+          expect(subject.call).to eq(value)
+        end
+      end
+
+      context "when value_proc waits" do
+        let(:value_proc) { waiting_proc }
+
+        it "returns a proxy in place of the result" do
+          result = subject.call
+          expect(is_proxy?(result)).to be_true
+        end
+
+        it "sets the value of the proxy after releasing" do
+          result = subject.call
+          release_waiter
+          expect(result.subject).to eq(wait_value)
+        end
       end
     end
 
-    context "when value_proc waits" do
-      let(:value_proc) { waiting_proc }
+    context "when the context is disabled" do
+      let(:enabled) { false }
 
-      it "returns a proxy in place of the result" do
-        result = subject.call
-        expect(is_proxy?(result)).to be_true
+      before do
+        expect_serial!
       end
 
-      it "sets the value of the proxy after waiting" do
-        result = subject.call
-        dispatch_waiting_result
-        expect(result.subject).to eq(wait_value)
+      context "when value_proc doesn't wait" do
+        let(:value_proc) { nowait_proc }
+
+        it "returns the expected result" do
+          expect(subject.call).to eq(value)
+        end
       end
     end
+
   end
 
 end

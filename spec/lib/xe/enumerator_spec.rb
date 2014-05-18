@@ -1,21 +1,11 @@
 require 'spec_helper'
 
 describe Xe::Enumerator do
+  include Xe::Test::Helper::Enumerator
+  include Xe::Test::Mock::Enumerator
 
   subject do
     Xe::Enumerator.new(context, enumerable, options)
-  end
-
-  let(:context) do
-    double(Xe::Context).tap do |context|
-      context.stub(:enabled?) { enabled }
-    end
-  end
-
-  let(:mapper) do
-    double(mapper_class).tap do |mapper|
-      mapper.stub(:call)
-    end
   end
 
   let(:enumerable) { [1, 2, 3] }

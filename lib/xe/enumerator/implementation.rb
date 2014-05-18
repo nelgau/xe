@@ -35,8 +35,8 @@ module Xe
       # the accumulator. Substitutes a proxy for an unrealized return value.
       def inject(*args, &blk)
         # If we have no initial or no block, delegate this to the evaluator.
-        return super if !args.any? || !blk
-        run_injector(args.first, &blk)
+        return super if args.length != 1 || !blk
+        run_injector(args.first) { |acc, o| blk.call(acc, o) }
       end
 
       alias_method :reduce, :inject

@@ -1,6 +1,7 @@
 module Xe::Test
   module Mock
     module Context
+      # Returns a new tracing realizer implementation.
       def new_realizer_mock(increment)
         Realizer.new(increment)
       end

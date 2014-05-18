@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 describe Xe::Enumerator::Strategy::Mapper do
+  include Xe::Test::Helper::Enumerator
   include Xe::Test::Mock::Enumerator
 
   subject do
@@ -8,27 +9,21 @@ describe Xe::Enumerator::Strategy::Mapper do
       context,
       enumerable,
       :compute_proc => compute_proc,
-      :results_proc => results_proc
+      :results_proc => results_proc,
+      :tag => tag
     )
   end
 
-  # Don't use a real context here so we can test these strategy is isolation,
-  # without invoking the full complexity of the gem (like scheduling, policies
-  # and the loom).
-
-  let(:context)       { new_context_mock(&finalize_proc) }
   let(:compute_proc)  { double_proc }
   let(:results_proc)  { Proc.new { |r| results << r } }
   let(:finalize_proc) { Proc.new {} }
+  let(:tag)           { nil }
 
-  let(:enumerable)    { [0, 1, 2, 3, 4, 5] }
   let(:double_proc)   { Proc.new { |i| i * 2 } }
+  let(:wait_index)    { 2 }
 
   let(:results)       { [] }
   let(:expected)      { enumerable.map(&double_proc) }
-
-  let(:deferrable)    { Xe::Deferrable.new }
-  let(:wait_index)    { 2 }
 
   let(:one_wait_proc) do
     Proc.new do |index|
@@ -42,27 +37,6 @@ describe Xe::Enumerator::Strategy::Mapper do
       value = wait_for_index(index)
       double_proc.call(value)
     end
-  end
-
-  def target_for_index(index)
-    Xe::Target.new(deferrable, index, 0)
-  end
-
-  def wait_for_index(index)
-    context.wait(target_for_index(index))
-  end
-
-  def dispatch_for_index(index)
-    target = target_for_index(index)
-    context.dispatch(target, index)
-  end
-
-  def dispatch_one_wait_result
-    dispatch_for_index(wait_index)
-  end
-
-  def dispatch_all_wait_results
-    enumerable.each { |index| dispatch_for_index(index) }
   end
 
   describe '#initialize' do
@@ -128,7 +102,7 @@ describe Xe::Enumerator::Strategy::Mapper do
 
     context "when compute_proc waits once" do
       let(:compute_proc)  { one_wait_proc }
-      let(:finalize_proc) { Proc.new { dispatch_one_wait_result } }
+      let(:finalize_proc) { Proc.new { release_enumerable_waiters } }
 
       it "emits a proxy in place of the deferred value" do
         subject.call
@@ -149,12 +123,12 @@ describe Xe::Enumerator::Strategy::Mapper do
 
         context "when the attended (waited) value is resolved" do
           it "calls dispatch on the context" do
-            expect(context).to receive(:dispatch)
-            dispatch_one_wait_result
+            expect(context).to receive(:dispatch).at_least(:once)
+            release_enumerable_waiters
           end
 
           it "sets the value of the proxy after waiting" do
-            dispatch_one_wait_result
+            release_enumerable_waiters
             expect(proxy.subject).to eq(expected[wait_index])
           end
         end
@@ -168,12 +142,12 @@ describe Xe::Enumerator::Strategy::Mapper do
           end
 
           it "releases the fiber" do
-            dispatch_one_wait_result
+            release_enumerable_waiters
             expect(@resolve_fiber).to_not be_alive
           end
 
           it "releases the fiber with the correct value" do
-            dispatch_one_wait_result
+            release_enumerable_waiters
             expect(@resolve_value).to eq(expected[wait_index])
           end
         end
@@ -323,7 +297,7 @@ describe Xe::Enumerator::Strategy::Mapper do
 
       shared_examples_for "a proxy resolver" do
         it "resolves the subject of the proxy" do
-          dispatch_one_wait_result
+          release_enumerable_waiters
           proxied_value = results[wait_index].subject
           expect(proxied_value).to eq(expected[wait_index])
         end
@@ -337,14 +311,14 @@ describe Xe::Enumerator::Strategy::Mapper do
         it_behaves_like "a suspended, completed enumeration"
 
         it "calls dispatch on the context after waiting" do
-          expect(context).to receive(:dispatch)
-          dispatch_one_wait_result
+          expect(context).to receive(:dispatch).at_least(:once)
+          release_enumerable_waiters
         end
 
         context "when the attended (waited) value is resolved" do
           context "before completing the enumeration" do
             before do
-              dispatch_one_wait_result
+              release_enumerable_waiters
             end
 
             it_behaves_like "a suspended, completed enumeration"
@@ -354,7 +328,7 @@ describe Xe::Enumerator::Strategy::Mapper do
           context "after completing the enumeration" do
             before do
               subject.advance
-              dispatch_one_wait_result
+              release_enumerable_waiters
             end
 
             it_behaves_like "a suspended, completed enumeration"
@@ -411,16 +385,44 @@ describe Xe::Enumerator::Strategy::Mapper do
 
         it "calls dispatch on the context after waiting" do
           expect(context).to receive(:dispatch).exactly(expected.length).times
-          dispatch_all_wait_results
+          release_enumerable_waiters
         end
 
         it "sets the value of the proxy after waiting" do
-          dispatch_all_wait_results
+          release_enumerable_waiters
           results.each_with_index do |result, index|
             expect(result.subject).to eq(expected[index])
           end
         end
       end
+    end
+
+  end
+
+  describe '#inspect' do
+
+    context "when the worker has a tag" do
+      let(:tag) { 'foo' }
+
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
+    end
+
+    context "when the worker has no tag" do
+      let(:tag) { nil }
+
+      it "is a string" do
+        expect(subject.inspect).to be_an_instance_of(String)
+      end
+    end
+
+  end
+
+  describe '#to_s' do
+
+    it "is a string" do
+      expect(subject.to_s).to be_an_instance_of(String)
     end
 
   end

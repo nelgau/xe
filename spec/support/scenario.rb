@@ -18,31 +18,49 @@ module Xe::Test
 
     module ClassMethods
 
-      def expect_output!
-        it "has the correct output" do
+      def expect_success!(options={})
+        define_test("runs without raising", options) do
+          run_scenarios
+        end
+      end
+
+      def expect_output!(options={})
+        define_test("has the correct output", options) do
           results = run_scenarios
           Scenario.verify_results(results, :value => output)
         end
       end
 
-      def expect_consistent!
-        it "is consistent" do
+      def expect_consistent!(options={})
+        define_test("is consistent", options) do
           results = run_scenarios
           reference = results.delete(reference_key)
           Scenario.verify_results(results, reference)
         end
       end
 
-      def expect_exception!
-        it "raises an exception" do
+      def expect_exception!(options={})
+        define_test("raises an exception", options) do
           results = run_scenarios
           Scenario.verify_exception(results)
         end
       end
 
+      private
+
+      def define_test(default_name, options={}, &blk)
+        it(options[:name] || default_name, &blk)
+      end
+
     end
 
     module InstanceMethods
+      # Wraps the invocation of #invoke and returns the result. The default
+      # implementation createds a real context.
+      def around_invoke(options={})
+        Xe.context(options) { yield }
+      end
+
       # Raises an exception expected by `expect_exception!`.
       def raise_exception
         raise Xe::Test::Scenario::Error
@@ -67,7 +85,7 @@ module Xe::Test
         Scenario.log "Working."
 
         results = scenario_options.each_with_object({}) do |(name, opts), rs|
-          rs[name] = run_context(opts)
+          rs[name] = run_test_driver(opts.dup)
           Scenario.log '.'
         end
 
@@ -77,9 +95,12 @@ module Xe::Test
         results
       end
 
-      def run_context(options)
-        { :value => Xe.context(options) { invoke } }
+      def run_test_driver(options={})
+        # Record a result value.
+        value = around_invoke(options) { |*args| invoke(*args) }
+        { :value => value }
       rescue => e
+        # Record an exception.
         { :error => e }
       end
 
@@ -104,15 +125,21 @@ module Xe::Test
     end
 
     def self.explain_value(result, reference)
-      result[:error] ?
-        "had an error when a value was expected: #{result[:error]}" :
+      error = result[:error]
+      error ?
+        "had an error when a value was expected: #{error_string(error)}" :
         "has a distinct value"
     end
 
     def self.explain_error(result)
-      result[:error] ?
-        "had a distinct error: #{result[:error]}" :
+      error = result[:error]
+      error ?
+        "had a distinct error: #{error_string(error)}" :
         "had a value when an error was unexpected"
+    end
+
+    def self.error_string(error)
+      "#{error}\n#{error.backtrace.join("\n")}"
     end
 
     # Purely for debugging and independent verification.

@@ -214,7 +214,7 @@ module Xe
     # subject. They will drop all references to the context.
     def resolve(target, value)
       target_proxies = proxies.delete(target) || []
-      trace(:proxy_resolve, target, target_proxies.count) if @tracer
+      trace(:proxy_resolve, target, target_proxies.length)
       target_proxies.each { |p| p.__set_subject(value) }
     end
 

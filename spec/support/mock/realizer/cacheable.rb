@@ -2,6 +2,7 @@ module Xe::Test
   module Mock
     module Realizer
       module Cacheable
+        # Returns a cache object with an in-memory store.
         def new_cache_mock(cached_values)
           Cache.new(cached_values)
         end

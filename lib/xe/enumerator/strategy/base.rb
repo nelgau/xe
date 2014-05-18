@@ -12,15 +12,30 @@ module Xe
           new(*args, &blk).call
         end
 
-        def initialize(context)
+        def initialize(context, options={})
           @context = context
+          @concurrent = options.fetch(:concurrent, true)
+        end
+
+        # Return true if the strategy will imploy a concurrent execution model.
+        # Otherwise, it delegates to the standard library enumerable interface.
+        def concurrent?
+          @concurrent && @context.enabled?
         end
 
         # Returns the result of the enumeration. This is the designated entry
-        # point for the launching strategies.
+        # point for the launching strategies. It selects between the serial
+        # and concurrent execution paths.
         def call
-          # Serialize execution when the context is disabled.
-          @context.enabled? ? perform : perform_serial
+          concurrent? ? perform : perform_serial
+        end
+
+        def inspect
+          "#<#{self.class.name}>"
+        end
+
+        def to_s
+          inspect
         end
 
         # Override to return the result of the enumeration executed using
@@ -35,14 +50,6 @@ module Xe
         # enumeration methods and not create any fibers or proxies.
         def perform_serial
           raise NotImplementedError
-        end
-
-        def inspect
-          "#<#{self.class.name}>"
-        end
-
-        def to_s
-          inspect
         end
       end
     end

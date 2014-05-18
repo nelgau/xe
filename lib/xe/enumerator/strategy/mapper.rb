@@ -8,9 +8,9 @@ module Xe
         attr_reader :map_proc
         attr_reader :results
 
-        def initialize(context, enum, &map_proc)
+        def initialize(context, enum, options={}, &map_proc)
           raise ArgumentError, "No block given" unless block_given?
-          super(context)
+          super(context, options)
 
           @enum = enum
           @map_proc = map_proc
@@ -20,7 +20,8 @@ module Xe
             @context,
             @enum,
             :compute_proc => map_proc,
-            :results_proc => method(:add_result)
+            :results_proc => method(:add_result),
+            :tag => :mapper
           )
         end
 
