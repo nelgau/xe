@@ -33,7 +33,7 @@ describe Xe::Enumerator::Implementation do
   # implementation createds a real context.
   def around_invoke(options={})
     proxies = options.delete(:proxies)
-    Xe.context(options) do
+    with_context_mock(options) do
       enum = enumerable.dup
       with_proxies(enum, type: proxies) do
         # Create a new enumerator for the specific context and enum.
