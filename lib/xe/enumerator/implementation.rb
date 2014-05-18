@@ -48,7 +48,7 @@ module Xe
       def all?(&blk)
         blk ||= Proc.new { |o| o }
         run_injector(true) do |acc, o|
-          !!acc && !!blk.call(o)
+          !!blk.call(o) && !!acc
         end
       end
 
@@ -59,7 +59,7 @@ module Xe
       def any?(&blk)
         blk ||= Proc.new { |o| o }
         run_injector(false) do |acc, o|
-          !!acc || !!blk.call(o)
+          !!blk.call(o) || !!acc
         end
       end
 
@@ -70,7 +70,7 @@ module Xe
       def none?(&blk)
         blk ||= Proc.new { |o| o }
         run_injector(true) do |acc, o|
-          !!acc && !blk.call(o)
+          !blk.call(o) && !!acc
         end
       end
 
@@ -124,7 +124,7 @@ module Xe
       # uses #==. Substitutes a proxy for an unrealized return value.
       def include?(obj)
         run_injector(false) do |acc, o|
-          !!acc || (o == obj)
+          (o == obj) || !!acc
         end
       end
 
