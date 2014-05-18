@@ -130,8 +130,20 @@ module Xe::Test
           resolve.send(method, *args, &blk)
         end
 
+        def !
+          !resolve
+        end
+
         def ==(other)
           resolve == other
+        end
+
+        def !=(other)
+          __resolve_value != Proxy.resolve(other)
+        end
+
+        def eql?(other)
+          __resolve_value.eql?(Proxy.resolve(other))
         end
 
         def hash
