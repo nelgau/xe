@@ -243,29 +243,15 @@ describe Xe::Enumerator::Implementation do
         let(:ret_val)  { true }
         let(:captured) { [] }
 
-        context "when early termination isn't possible" do
-          let(:ret_val) { true }
-
-          it "invokes the block once for each element" do
-            invoke
-            expect(captured.length).to eq(count)
-          end
-
-          it "invokes the block once with each element" do
-            invoke
-            captured.zip(enumerable).each do |obj, element|
-              expect(obj).to eql(element)
-            end
-          end
+        it "invokes the block once for each element" do
+          invoke
+          expect(captured.length).to eq(count)
         end
 
-        context "when early termination is possible" do
-          # Causes the enumeration to short-circuit.
-          let(:ret_val) { false }
-
-          it "invokes the block only once" do
-            invoke
-            expect(captured.length).to eq(1)
+        it "invokes the block once with each element" do
+          invoke
+          captured.zip(enumerable).each do |obj, element|
+            expect(obj).to eql(element)
           end
         end
       end
@@ -335,29 +321,15 @@ describe Xe::Enumerator::Implementation do
         let(:ret_val)  { false }
         let(:captured) { [] }
 
-        context "when early termination isn't possible" do
-          let(:ret_val) { false }
-
-          it "invokes the block once for each element" do
-            invoke
-            expect(captured.length).to eq(count)
-          end
-
-          it "invokes the block once with each element" do
-            invoke
-            captured.zip(enumerable).each do |obj, element|
-              expect(obj).to eql(element)
-            end
-          end
+        it "invokes the block once for each element" do
+          invoke
+          expect(captured.length).to eq(count)
         end
 
-        context "when early termination is possible" do
-          # Causes the enumeration to short-circuit.
-          let(:ret_val) { true }
-
-          it "invokes the block only once" do
-            invoke
-            expect(captured.length).to eq(1)
+        it "invokes the block once with each element" do
+          invoke
+          captured.zip(enumerable).each do |obj, element|
+            expect(obj).to eql(element)
           end
         end
       end
@@ -427,29 +399,15 @@ describe Xe::Enumerator::Implementation do
         let(:ret_val)   { false }
         let(:captured)  { [] }
 
-        context "when early termination isn't possible" do
-          let(:ret_val) { false }
-
-          it "invokes the block once for each element" do
-            invoke
-            expect(captured.length).to eq(count)
-          end
-
-          it "invokes the block once with each element" do
-            invoke
-            captured.zip(enumerable).each do |obj, element|
-              expect(obj).to eql(element)
-            end
-          end
+        it "invokes the block once for each element" do
+          invoke
+          expect(captured.length).to eq(count)
         end
 
-        context "when early termination is possible" do
-          # Causes the enumeration to short-circuit.
-          let(:ret_val) { true }
-
-          it "invokes the block only once" do
-            invoke
-            expect(captured.length).to eq(1)
+        it "invokes the block once with each element" do
+          invoke
+          captured.zip(enumerable).each do |obj, element|
+            expect(obj).to eql(element)
           end
         end
       end
