@@ -2017,6 +2017,7 @@ describe "Xe - Enumeration" do
   context "with an injecting enumerator" do
 
     context "with #inject" do
+
       context "and realized values (coercion)" do
         expect_output!
 
@@ -2061,6 +2062,31 @@ describe "Xe - Enumeration" do
           end
         end
       end
+
+    end
+
+    describe '#each_with_index' do
+
+    end
+
+    describe '#each_with_object' do
+
+    end
+
+  end
+
+  #
+  # Filtering Enumeration
+  #
+
+  context "with a filtering enumerator" do
+
+    describe '#select' do
+
+    end
+
+    describe '#reject' do
+
     end
 
   end
