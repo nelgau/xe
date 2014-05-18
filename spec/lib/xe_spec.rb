@@ -68,6 +68,32 @@ describe Xe do
 
   end
 
+  describe '.[]' do
+
+    let(:ids)    { [1, 2, 3] }
+
+    context "while wrapped in a context" do
+      around do |example|
+        Xe.context { example.run }
+      end
+
+      it "returns an instance of Xe:Enumerator" do
+        expect(Xe[ids]).to be_an_instance_of(Xe::Enumerator)
+      end
+
+      it "enumerates" do
+        expect(Xe[ids].first).to eq(1)
+      end
+    end
+
+    context "when there is no context" do
+      it "raises Xe::NoContextError" do
+        expect { Xe[ids] }.to raise_error(Xe::NoContextError)
+      end
+    end
+
+  end
+
   describe '.realizer' do
 
     it "returns a Xe::Realizer::Proc" do

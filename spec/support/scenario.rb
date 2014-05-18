@@ -65,6 +65,11 @@ module Xe::Test
       def raise_exception
         raise Xe::Test::Scenario::Error
       end
+
+      # Enables debug output.
+      def scenario_debug!
+        @scenario_debug = true
+      end
     end
 
     def self.included(base)
@@ -81,17 +86,19 @@ module Xe::Test
     module PrivateMethods
 
       def run_scenarios
+        debug = !!@scenario_debug
+
         start_time = Time.now
-        Scenario.log "Working."
+        Scenario.log "Working." if debug
 
         results = scenario_options.each_with_object({}) do |(name, opts), rs|
           rs[name] = run_test_driver(opts.dup)
-          Scenario.log '.'
+          Scenario.log '.' if debug
         end
 
         interval = Time.now - start_time
-        Scenario.log " (completed in %0.2f seconds)\n" % interval.to_f
-        Scenario.print_stats(results)
+        Scenario.log " (completed in %0.2f seconds)\n" % interval.to_f if debug
+        Scenario.print_stats(results) if debug
         results
       end
 

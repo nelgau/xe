@@ -33,6 +33,14 @@ module Xe
     Context.wrap(options, &blk)
   end
 
+  # Returns a generic deferrable-aware enumerator for an enumerable. If no
+  # context exists, it raises NoContextException. This is syntactic sugar
+  # for the Xe.enum method below and is the preferred shorthand.
+  def self.[](e, options={})
+    raise NoContextError if !Context.exists?
+    Context.current.enum(e, options)
+  end
+
   # Constructs a new realizer from a proc. On realization, the block will
   # receive an enumerable of ids and must return a result hash, mapping ids
   # to values (or other deferred objects). You can pass the `tag` argument to
@@ -54,9 +62,9 @@ module Xe
   end
 
   # Returns a generic deferrable-aware enumerator for an enumerable. If no
-  # context exists, it raises a NoContextException.
-  def self.enum(e, options={}, &blk)
+  # context exists, it raises NoContextException.
+  def self.enum(e, options={})
     raise NoContextError if !Context.exists?
-    Context.current.enum(e, options, &blk)
+    Context.current.enum(e, options)
   end
 end
