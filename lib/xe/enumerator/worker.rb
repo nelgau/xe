@@ -120,7 +120,7 @@ module Xe
           # fiber. After finalizing, the value must be available, so return
           # it as the subject.
           proxy = @context.proxy(target) do
-            @context.finalize!
+            @context.finalize_by_proxy!
             # The proxy accepts the returned value as its resolved subject.
             value
           end

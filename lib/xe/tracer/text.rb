@@ -71,6 +71,10 @@ module Xe
         log "Deadlocked."
       end
 
+      def finalize_by_proxy
+        log "Finalizing to release dependencies on a proxy."
+      end
+
       def log(string)
         logger.info(string)
       end

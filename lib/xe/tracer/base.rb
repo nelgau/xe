@@ -26,6 +26,7 @@ module Xe
       def finalize_start; end
       def finalize_step(event); end
       def finalize_deadlock; end
+      def finalize_by_proxy; end
     end
   end
 end

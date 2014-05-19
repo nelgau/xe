@@ -3722,22 +3722,6 @@ describe "Xe - Enumeration (General)" do
           end
         end
       end
-
-      context "when raising" do
-        expect_exception!
-
-        let(:input) { [1, 2, 3] }
-
-        def invoke
-          Xe.context do |c|
-            result = c.enum(input).inject(0) do |sum, x|
-              raise_exception if x == 2
-              sum + realizer_value[x]
-            end
-            result.to_i
-          end
-        end
-      end
     end
 
     context "with a mapping enumerator" do
@@ -3750,24 +3734,6 @@ describe "Xe - Enumeration (General)" do
         def invoke
           Xe.context do |c|
             result = c.enum(input).map do |x|
-              realizer_value[x]
-            end
-            result.map do |x|
-              x.to_i
-            end
-          end
-        end
-      end
-
-      context "when raising" do
-        expect_exception!
-
-        let(:input) { [1, 2, 3] }
-
-        def invoke
-          Xe.context do |c|
-            result = c.enum(input).map do |x|
-              raise_exception if x == 2
               realizer_value[x]
             end
             result.map do |x|

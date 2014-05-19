@@ -48,6 +48,11 @@ module Xe::Test
           @finalize_proc.call
         end
 
+        def finalize_by_proxy!
+          trace(:finalize_by_proxy)
+          finalize!
+        end
+
         def dispatch(target, value)
           trace(:value_dispatched, target, value)
           resolve(target, value)

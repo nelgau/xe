@@ -573,6 +573,22 @@ describe Xe::Context do
 
   end
 
+  describe '#finalize_by_proxy!' do
+
+    it "invokes #finalize" do
+      expect(subject).to receive(:finalize!)
+      subject.finalize_by_proxy!
+    end
+
+    context "when a tracer is enabled" do
+      it "emits 'finalize_start'" do
+        expect(tracer).to receive(:finalize_start)
+        subject.finalize!
+      end
+    end
+
+  end
+
   describe '#assert_vacant!' do
 
     context "When the context is vacant" do

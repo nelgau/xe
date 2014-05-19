@@ -109,6 +109,13 @@ module Xe
       end
     end
 
+    # Finalizes the context. Called by proxies that can't wait and must
+    # finalize to release dependecies on their resolved subject.
+    def finalize_by_proxy!
+      trace(:finalize_by_proxy) if @tracer
+      finalize!
+    end
+
     # Raises an exception unless the context is fully resolved.
     def assert_vacant!
       raise InconsistentContextError if !scheduler.empty?

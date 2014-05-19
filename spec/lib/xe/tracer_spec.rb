@@ -121,6 +121,10 @@ describe Xe::Tracer do
         subject.call(:finalize_deadlock)
       end
 
+      it "handles 'finalize_by_proxy'" do
+        subject.call(:finalize_by_proxy)
+      end
+
     end
 
   end
