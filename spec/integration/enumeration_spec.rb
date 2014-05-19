@@ -99,7 +99,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (never false)" do
+        context "with a predicate (always true)" do
           expect_output!
 
           let(:output) { true }
@@ -113,7 +113,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -140,7 +140,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (never false)" do
+        context "with a predicate that defers a realization (always true)" do
           expect_output!
 
           let(:output) { true }
@@ -154,7 +154,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -199,7 +199,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (never false)" do
+        context "with a predicate (always true)" do
           expect_output!
 
           let(:output) { true }
@@ -213,7 +213,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -240,7 +240,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (never false)" do
+        context "with a predicate that defers a realization (always true)" do
           expect_output!
 
           let(:output) { true }
@@ -254,7 +254,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -299,7 +299,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (never false)" do
+        context "with a predicate (always true)" do
           expect_output!
 
           let(:output) { [true, true, true] }
@@ -315,7 +315,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { [false, true, false] }
@@ -346,7 +346,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (never false)" do
+        context "with a predicate that defers a realization (always true)" do
           expect_output!
 
           let(:output) { [true, true, true] }
@@ -362,7 +362,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { [true, false, false] }
@@ -413,7 +413,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -427,7 +427,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -454,7 +454,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -468,7 +468,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -513,7 +513,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -527,7 +527,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -554,7 +554,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -568,7 +568,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -613,7 +613,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { [false, true, false] }
@@ -629,7 +629,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { [false, false, false] }
@@ -660,7 +660,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { [true, false, false] }
@@ -676,7 +676,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { [false, false, false] }
@@ -727,7 +727,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -741,7 +741,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { true }
@@ -768,7 +768,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -782,7 +782,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { true }
@@ -827,7 +827,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -841,7 +841,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { true }
@@ -868,7 +868,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { false }
@@ -882,7 +882,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { true }
@@ -927,7 +927,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (false)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { [true, false, true] }
@@ -943,7 +943,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { [true, true, true] }
@@ -974,7 +974,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (false)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { [false, true, true] }
@@ -990,7 +990,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { [true, true, true] }
@@ -1041,7 +1041,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { 1 }
@@ -1068,7 +1068,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { 1 }
@@ -1113,7 +1113,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { 1 }
@@ -1140,7 +1140,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { 1 }
@@ -1185,7 +1185,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { [0, 1, 0] }
@@ -1216,7 +1216,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { [1, 0, 0] }
@@ -1267,7 +1267,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (true once)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -1281,7 +1281,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -1308,7 +1308,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (true once)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -1322,7 +1322,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -1367,7 +1367,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (true once)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -1381,7 +1381,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -1408,7 +1408,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (true once)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { true }
@@ -1422,7 +1422,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { false }
@@ -1467,7 +1467,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (true once)" do
+        context "with a predicate (once true)" do
           expect_output!
 
           let(:output) { [false, true, false] }
@@ -1483,7 +1483,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate (always false)" do
+        context "with a predicate (never true)" do
           expect_output!
 
           let(:output) { [false, false, false] }
@@ -1514,7 +1514,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (true once)" do
+        context "with a predicate that defers a realization (once true)" do
           expect_output!
 
           let(:output) { [true, false, false] }
@@ -1530,7 +1530,7 @@ describe "Xe - Enumeration" do
           end
         end
 
-        context "with a predicate that defers a realization (always false)" do
+        context "with a predicate that defers a realization (never true)" do
           expect_output!
 
           let(:output) { [false, false, false] }
@@ -1675,7 +1675,6 @@ describe "Xe - Enumeration" do
     context "with #map" do
 
       context "for values to values" do
-
         context "when returing values" do
           expect_output!
 
