@@ -6,25 +6,26 @@ describe "Xe - Enumeration (General)" do
   let(:scenario_options) { {
     :serialized     => { :enabled    => false },
     # The 'nested' tests require at least three fibers to prevent deadlock.
-    :two_fibers     => { :max_fibers => 3     },
+    :three_fibers   => { :max_fibers => 3     },
     :several_fibers => { :max_fibers => 10    },
     :many_fibers    => { :max_fibers => 200   }
   } }
 
   let(:realizer_value) do
     Xe.realizer do |xs|
-      xs.each_with_object({}) do |x, rs|
-        rs[x] = x + 1
-      end
+      xs.map { |x| x + 1 }
     end
   end
 
   let(:realizer_defer) do
     Xe.realizer do |xs|
-      xs.each_with_object({}) do |x, rs|
-        rs[x] = realizer_value[x]
-      end
+      xs.map { |x| realizer_value[x] }
     end
+  end
+
+  before do
+    # Disallow any explicit finalization of the context by a enumerator proxy.
+    expect_any_instance_of(Xe::Context).to_not receive(:finalize_by_proxy!)
   end
 
   #
@@ -3696,52 +3697,6 @@ describe "Xe - Enumeration (General)" do
         end
       end
 
-    end
-
-  end
-
-  #
-  # Realization Outside of an Enumerator
-  #
-
-  context "when realizing outside of an enumerator" do
-
-    context "when a single-valued enumerator" do
-      context "when returning values" do
-        expect_output!
-
-        let(:input)  { [1, 2, 3] }
-        let(:output) { 9 }
-
-        def invoke
-          Xe.context do |c|
-            result = c.enum(input).inject(0) do |sum, x|
-              sum + realizer_value[x]
-            end
-            result.to_i
-          end
-        end
-      end
-    end
-
-    context "with a mapping enumerator" do
-      context "when returning values" do
-        expect_output!
-
-        let(:input)  { [1, 2, 3] }
-        let(:output) { [2, 3, 4] }
-
-        def invoke
-          Xe.context do |c|
-            result = c.enum(input).map do |x|
-              realizer_value[x]
-            end
-            result.map do |x|
-              x.to_i
-            end
-          end
-        end
-      end
     end
 
   end
